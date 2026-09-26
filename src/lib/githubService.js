@@ -69,54 +69,87 @@ export async function applyFixesAndCommit({
 
   const committedFiles = []
 
-  // 2. Process each code fix
-  for (let i = 0; i < codeFixes.length; i++) {
-    const fix = codeFixes[i]
+  // 2. Group fixes by file so each file is updated once with all its changes
+  const fixesByFile = new Map()
+  for (const fix of codeFixes) {
     if (!fix.file || !fix.fixedCode) continue
+    if (!fixesByFile.has(fix.file)) {
+      fixesByFile.set(fix.file, [])
+    }
+    fixesByFile.get(fix.file).push(fix)
+  }
 
-    if (onProgress) onProgress(`Updating ${fix.file} (${i + 1}/${codeFixes.length})...`)
+  const fileEntries = Array.from(fixesByFile.entries())
+  if (fileEntries.length === 0) {
+    throw new Error('No valid files to update in this commit.')
+  }
 
-    // Fetch existing file content & SHA from the PR head repo
-    const fileRes = await fetch(
-      `https://api.github.com/repos/${headRepo}/contents/${fix.file}?ref=${encodeURIComponent(branch)}`,
-      { headers }
-    )
+  const reqHeaders = {
+    ...headers,
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    Pragma: 'no-cache'
+  }
 
-    if (!fileRes.ok) {
-      const err = await fileRes.json().catch(() => ({}))
-      if (fileRes.status === 404) {
-        throw new Error(`File '${fix.file}' not found on branch '${branch}'. Ensure you have push write permissions to ${headRepo}.`)
-      } else if (fileRes.status === 403) {
-        throw new Error(`Permission denied committing to ${headRepo}. Your token needs 'repo' write access or fork permissions.`)
+  for (let idx = 0; idx < fileEntries.length; idx++) {
+    const [filePath, fileFixes] = fileEntries[idx]
+
+    if (onProgress) {
+      onProgress(`Updating ${filePath} (${idx + 1}/${fileEntries.length})...`)
+    }
+
+    // Function to fetch latest file data with cache busting
+    const fetchLatestFile = async () => {
+      const cacheBuster = Date.now() + Math.random().toString(36).substring(2, 7)
+      const res = await fetch(
+        `https://api.github.com/repos/${headRepo}/contents/${filePath}?ref=${encodeURIComponent(branch)}&_cb=${cacheBuster}`,
+        {
+          headers: reqHeaders,
+          cache: 'no-store'
+        }
+      )
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        if (res.status === 404) {
+          throw new Error(`File '${filePath}' not found on branch '${branch}'. Ensure you have push write permissions to ${headRepo}.`)
+        } else if (res.status === 403) {
+          throw new Error(`Permission denied committing to ${headRepo}. Your token needs 'repo' write access or fork permissions.`)
+        }
+        throw new Error(err.message || `Could not fetch ${filePath}`)
       }
-      throw new Error(err.message || `Could not fetch ${fix.file}`)
+      return await res.json()
     }
 
-    const fileData = await fileRes.json()
-    const sha = fileData.sha
-    const rawContent = decodeBase64Utf8(fileData.content)
+    // Apply all fixes for this file onto its raw content
+    const applyReplacements = (rawContent) => {
+      let updated = rawContent
+      for (const fix of fileFixes) {
+        const normRaw = updated.replace(/\r\n/g, '\n')
+        const normOrig = fix.originalCode ? fix.originalCode.trim().replace(/\r\n/g, '\n') : ''
+        const normFixed = fix.fixedCode ? fix.fixedCode.trim() : ''
 
-    // Replace originalCode with fixedCode
-    let updatedContent = rawContent
-    const normRaw = rawContent.replace(/\r\n/g, '\n')
-    const normOrig = fix.originalCode ? fix.originalCode.trim().replace(/\r\n/g, '\n') : ''
-    
-    if (normOrig && normRaw.includes(normOrig)) {
-      updatedContent = normRaw.replace(normOrig, fix.fixedCode.trim())
-    } else if (fix.originalCode && rawContent.includes(fix.originalCode.trim())) {
-      updatedContent = rawContent.replace(fix.originalCode.trim(), fix.fixedCode.trim())
-    } else {
-      // If exact original snippet is not matched, append or patch
-      updatedContent = rawContent + '\n\n' + fix.fixedCode.trim()
+        if (normOrig && normRaw.includes(normOrig)) {
+          updated = normRaw.replace(normOrig, normFixed)
+        } else if (fix.originalCode && updated.includes(fix.originalCode.trim())) {
+          updated = updated.replace(fix.originalCode.trim(), normFixed)
+        } else if (normFixed && !updated.includes(normFixed)) {
+          updated = updated + '\n\n' + normFixed
+        }
+      }
+      return updated
     }
 
-    // Submit commit for this file
-    const commitMsg = commitMessage || `refactor: apply AI fix for ${fix.file}`
-    const putRes = await fetch(
-      `https://api.github.com/repos/${headRepo}/contents/${fix.file}`,
+    let fileData = await fetchLatestFile()
+    let sha = fileData.sha
+    let updatedContent = applyReplacements(decodeBase64Utf8(fileData.content))
+
+    const commitMsg = commitMessage || `refactor: apply AI fix for ${filePath}`
+
+    // Attempt to commit with automatic retry on SHA mismatch (409 Conflict)
+    let putRes = await fetch(
+      `https://api.github.com/repos/${headRepo}/contents/${filePath}`,
       {
         method: 'PUT',
-        headers,
+        headers: reqHeaders,
         body: JSON.stringify({
           message: commitMsg,
           content: encodeBase64Utf8(updatedContent),
@@ -126,17 +159,39 @@ export async function applyFixesAndCommit({
       }
     )
 
+    // If SHA mismatch occurs (409 Conflict), re-fetch latest SHA and retry once
+    if (!putRes.ok && putRes.status === 409) {
+      await new Promise(r => setTimeout(r, 400)) // brief backoff
+      fileData = await fetchLatestFile()
+      sha = fileData.sha
+      updatedContent = applyReplacements(decodeBase64Utf8(fileData.content))
+
+      putRes = await fetch(
+        `https://api.github.com/repos/${headRepo}/contents/${filePath}`,
+        {
+          method: 'PUT',
+          headers: reqHeaders,
+          body: JSON.stringify({
+            message: commitMsg,
+            content: encodeBase64Utf8(updatedContent),
+            sha,
+            branch
+          })
+        }
+      )
+    }
+
     if (!putRes.ok) {
       const err = await putRes.json().catch(() => ({}))
       if (putRes.status === 403) {
         throw new Error(`Write permission denied on branch '${branch}'. You can only commit to branches on repos where you have write access.`)
       }
-      throw new Error(`Failed to commit fix for ${fix.file}: ${err.message || putRes.statusText}`)
+      throw new Error(`Failed to commit fix for ${filePath}: ${err.message || putRes.statusText}`)
     }
 
     const commitResult = await putRes.json()
     committedFiles.push({
-      file: fix.file,
+      file: filePath,
       commitUrl: commitResult.commit?.html_url
     })
   }
