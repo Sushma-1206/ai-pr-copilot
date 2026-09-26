@@ -2,29 +2,52 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import AuthPanel from '../components/AuthPanel'
 import OverviewPanel from '../components/OverviewPanel'
+import ReviewerOverviewPanel from '../components/ReviewerOverviewPanel'
 import IssuesPanel from '../components/IssuesPanel'
 import TestsPanel from '../components/TestsPanel'
 import AskAIPanel from '../components/AskAIPanel'
 import ReviewerPanel from '../components/ReviewerPanel'
+import RiskPanel from '../components/RiskPanel'
+import DiffPreviewPanel from '../components/DiffPreviewPanel'
 import RulesPanel from '../components/RulesPanel'
 import HistoryLogsPanel from '../components/HistoryLogsPanel'
 import ApiKeyModal from '../components/ApiKeyModal'
 import { extractPRDetails } from '../lib/diffExtractor'
 import { runAIReview, getAISettings } from '../lib/aiService'
 
-// Primary tabs (visible in main nav)
-const PRIMARY_TABS = [
+// Contributor navigation tabs
+const CONTRIBUTOR_TABS = [
   { key: 'overview', label: 'Overview', icon: '🚀' },
   { key: 'issues', label: 'Issues', icon: '🔍' },
   { key: 'tests', label: 'Tests', icon: '🧪' },
   { key: 'ask', label: 'Ask AI', icon: '💬' },
-  { key: 'reviewer', label: 'Reviewer', icon: '📋' }
+  { key: 'diff', label: 'Diff Preview', icon: '</>' }
+]
+
+// Reviewer navigation tabs
+const REVIEWER_TABS = [
+  { key: 'overview', label: 'Overview', icon: '🚀' },
+  { key: 'findings', label: 'Review Findings', icon: '📑' },
+  { key: 'risk', label: 'Risk', icon: '🛡️' },
+  { key: 'ask', label: 'Ask AI', icon: '💬' },
+  { key: 'diff', label: 'Diff Preview', icon: '</>' }
 ]
 
 export default function ContentApp() {
   const { isAuthenticated, loading: authLoading } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
+  
+  // Persistent Role Selection: 'contributor' | 'reviewer'
+  const [userRole, setUserRole] = useState(() => {
+    try {
+      return localStorage.getItem('ai_pr_copilot_user_role') || 'contributor'
+    } catch {
+      return 'contributor'
+    }
+  })
+
   const [activeTab, setActiveTab] = useState('overview')
+  const [pendingAskPrompt, setPendingAskPrompt] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
   const [settingsTab, setSettingsTab] = useState('rules') // 'rules' | 'history'
 
@@ -47,6 +70,17 @@ export default function ContentApp() {
 
   function handleFixStatusChange(issueId) {
     setFixStatuses(prev => ({ ...prev, [issueId]: 'applied' }))
+  }
+
+  function handleRoleChange(newRole) {
+    setUserRole(newRole)
+    try {
+      localStorage.setItem('ai_pr_copilot_user_role', newRole)
+    } catch (e) {
+      console.warn('Could not persist user role', e)
+    }
+    // Switch to overview for the newly selected role
+    setActiveTab('overview')
   }
 
   // Dynamically compute improved readiness score as issues are resolved
@@ -108,6 +142,10 @@ export default function ContentApp() {
     try {
       const result = await runAIReview({ prDetails, mode: 'reviewer' })
       setRevReviewResult(result)
+      // Also update shared reviewResult if not yet set
+      if (!reviewResult) {
+        setReviewResult(result)
+      }
     } catch (err) {
       if (err.message === 'API_KEY_MISSING') {
         setRevError('API_KEY_MISSING')
@@ -150,8 +188,10 @@ export default function ContentApp() {
     )
   }
 
+  const currentTabs = userRole === 'contributor' ? CONTRIBUTOR_TABS : REVIEWER_TABS
+
   return (
-    <div className="w-[460px] bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden font-sans text-xs">
+    <div className="w-[470px] bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden font-sans text-xs">
       {/* Header */}
       <div className="flex items-center justify-between px-3.5 py-2.5 bg-gradient-to-r from-gray-950 via-slate-900 to-indigo-950 text-white border-b border-gray-800/80 shadow-xs">
         <div className="flex items-center gap-2 min-w-0">
@@ -248,101 +288,178 @@ export default function ContentApp() {
             </div>
           </div>
         ) : (
-          /* Main content */
+          /* Main Workflow View */
           <div className="space-y-3">
-            {/* PR Title bar */}
-            {prDetails?.title && (
-              <div className="px-2.5 py-2 bg-gradient-to-r from-gray-50 to-indigo-50/30 border border-gray-200/90 rounded-xl shadow-2xs">
-                <p className="font-semibold text-gray-900 truncate text-[11px]" title={prDetails.title}>
-                  {prDetails.title}
-                </p>
-                <div className="flex items-center justify-between text-[10px] text-gray-500 mt-1">
-                  <span className="font-medium text-indigo-700">PR #{prDetails.prNumber}</span>
-                  <span className="bg-gray-200/80 text-gray-700 px-1.5 py-0.5 rounded-md font-mono text-[9px]">
-                    {prDetails.filesCount} files changed
-                  </span>
-                </div>
+            {/* Top Prominent Role Toggle */}
+            <div className="space-y-1">
+              <div className="flex bg-gray-100 p-1 rounded-xl gap-1 shadow-inner">
+                <button
+                  onClick={() => handleRoleChange('contributor')}
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer ${
+                    userRole === 'contributor'
+                      ? 'bg-indigo-600 text-white shadow-xs scale-[1.01]'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
+                  }`}
+                >
+                  <span>👤</span>
+                  <span>Contributor</span>
+                </button>
+                <button
+                  onClick={() => handleRoleChange('reviewer')}
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer ${
+                    userRole === 'reviewer'
+                      ? 'bg-indigo-600 text-white shadow-xs scale-[1.01]'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
+                  }`}
+                >
+                  <span>👁</span>
+                  <span>Reviewer</span>
+                </button>
               </div>
-            )}
 
-            {/* Segmented Navigation tabs */}
+              {/* Role Subtitle */}
+              <div className="px-1 text-center">
+                <p className="text-[10px] text-gray-500 font-medium">
+                  {userRole === 'contributor' ? (
+                    <>Focus: Fix issues, improve the PR, get it ready for review.</>
+                  ) : (
+                    <>Focus: Understand the changes, assess risks, make a review decision.</>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Segmented Sub-Navigation tabs */}
             <div className="flex bg-gray-100/90 p-1 rounded-xl gap-1 shadow-inner">
-              {PRIMARY_TABS.map(tab => {
+              {currentTabs.map(tab => {
                 const isActive = activeTab === tab.key
                 return (
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`flex-1 py-1.5 px-1 rounded-lg text-[10px] font-semibold transition-all duration-150 flex items-center justify-center gap-1 cursor-pointer ${
+                    className={`flex-1 py-1.5 px-0.5 rounded-lg text-[10px] font-semibold transition-all duration-150 flex items-center justify-center gap-1 cursor-pointer truncate ${
                       isActive
                         ? 'bg-white text-indigo-700 shadow-2xs font-bold scale-[1.02]'
                         : 'text-gray-500 hover:text-gray-800 hover:bg-white/40'
                     }`}
                   >
-                    <span className="text-xs">{tab.icon}</span>
-                    <span>{tab.label}</span>
+                    <span className="text-xs shrink-0">{tab.icon}</span>
+                    <span className="truncate">{tab.label}</span>
                   </button>
                 )
               })}
             </div>
 
-            {/* Tab Content */}
-            <div className="min-h-[300px] max-h-[520px] overflow-y-auto pr-0.5">
-              {activeTab === 'overview' && (
-                <OverviewPanel
-                  prDetails={prDetails}
-                  onRunCheck={handleRunDevCheck}
-                  loading={loading}
-                  reviewResult={effectiveReviewResult}
-                  previousResult={previousResult}
-                  error={error}
-                  onOpenApiKeyModal={() => setShowKeyModal(true)}
-                  onTabChange={setActiveTab}
-                  fixStatuses={fixStatuses}
-                  onFixStatusChange={handleFixStatusChange}
-                />
+            {/* Tab Panels */}
+            <div className="min-h-[320px] max-h-[530px] overflow-y-auto pr-0.5">
+              {/* Contributor Mode Tabs */}
+              {userRole === 'contributor' && (
+                <>
+                  {activeTab === 'overview' && (
+                    <OverviewPanel
+                      prDetails={prDetails}
+                      onRunCheck={handleRunDevCheck}
+                      loading={loading}
+                      reviewResult={effectiveReviewResult}
+                      previousResult={previousResult}
+                      error={error}
+                      onOpenApiKeyModal={() => setShowKeyModal(true)}
+                      onTabChange={setActiveTab}
+                      fixStatuses={fixStatuses}
+                      onFixStatusChange={handleFixStatusChange}
+                    />
+                  )}
+
+                  {activeTab === 'issues' && (
+                    <IssuesPanel
+                      prDetails={prDetails}
+                      reviewResult={effectiveReviewResult}
+                      onOpenApiKeyModal={() => setShowKeyModal(true)}
+                      fixStatuses={fixStatuses}
+                      onFixStatusChange={handleFixStatusChange}
+                    />
+                  )}
+
+                  {activeTab === 'tests' && (
+                    <TestsPanel
+                      prDetails={prDetails}
+                      reviewResult={reviewResult}
+                      onOpenApiKeyModal={() => setShowKeyModal(true)}
+                    />
+                  )}
+
+                  {activeTab === 'ask' && (
+                    <AskAIPanel
+                      prDetails={prDetails}
+                      analysisResult={reviewResult}
+                      onOpenApiKeyModal={() => setShowKeyModal(true)}
+                      initialPrompt={pendingAskPrompt}
+                      onClearInitialPrompt={() => setPendingAskPrompt(null)}
+                    />
+                  )}
+
+                  {activeTab === 'diff' && (
+                    <DiffPreviewPanel prDetails={prDetails} />
+                  )}
+                </>
               )}
 
-              {activeTab === 'issues' && (
-                <IssuesPanel
-                  prDetails={prDetails}
-                  reviewResult={effectiveReviewResult}
-                  onOpenApiKeyModal={() => setShowKeyModal(true)}
-                  fixStatuses={fixStatuses}
-                  onFixStatusChange={handleFixStatusChange}
-                />
-              )}
+              {/* Reviewer Mode Tabs */}
+              {userRole === 'reviewer' && (
+                <>
+                  {activeTab === 'overview' && (
+                    <ReviewerOverviewPanel
+                      prDetails={prDetails}
+                      reviewResult={effectiveReviewResult || revReviewResult}
+                      loading={loading || revLoading}
+                      error={error || revError}
+                      onRunCheck={handleRunRevCheck}
+                      onOpenApiKeyModal={() => setShowKeyModal(true)}
+                      onTabChange={setActiveTab}
+                      onAskPrompt={(prompt) => {
+                        setPendingAskPrompt(prompt)
+                        setActiveTab('ask')
+                      }}
+                    />
+                  )}
 
-              {activeTab === 'tests' && (
-                <TestsPanel
-                  prDetails={prDetails}
-                  reviewResult={reviewResult}
-                  onOpenApiKeyModal={() => setShowKeyModal(true)}
-                />
-              )}
+                  {activeTab === 'findings' && (
+                    <ReviewerPanel
+                      prDetails={prDetails}
+                      onRunCheck={handleRunRevCheck}
+                      loading={revLoading}
+                      reviewResult={revReviewResult || reviewResult}
+                      error={revError}
+                      onOpenApiKeyModal={() => setShowKeyModal(true)}
+                      tokenRefreshKey={tokenRefreshKey}
+                      onReAnalyze={() => {
+                        handleRunDevCheck()
+                      }}
+                    />
+                  )}
 
-              {activeTab === 'ask' && (
-                <AskAIPanel
-                  prDetails={prDetails}
-                  analysisResult={reviewResult}
-                  onOpenApiKeyModal={() => setShowKeyModal(true)}
-                />
-              )}
+                  {activeTab === 'risk' && (
+                    <RiskPanel
+                      prDetails={prDetails}
+                      reviewResult={effectiveReviewResult || revReviewResult}
+                      onTabChange={setActiveTab}
+                    />
+                  )}
 
-              {activeTab === 'reviewer' && (
-                <ReviewerPanel
-                  prDetails={prDetails}
-                  onRunCheck={handleRunRevCheck}
-                  loading={revLoading}
-                  reviewResult={revReviewResult}
-                  error={revError}
-                  onOpenApiKeyModal={() => setShowKeyModal(true)}
-                  tokenRefreshKey={tokenRefreshKey}
-                  onReAnalyze={() => {
-                    setActiveTab('overview')
-                    handleRunDevCheck()
-                  }}
-                />
+                  {activeTab === 'ask' && (
+                    <AskAIPanel
+                      prDetails={prDetails}
+                      analysisResult={reviewResult || revReviewResult}
+                      onOpenApiKeyModal={() => setShowKeyModal(true)}
+                      initialPrompt={pendingAskPrompt}
+                      onClearInitialPrompt={() => setPendingAskPrompt(null)}
+                    />
+                  )}
+
+                  {activeTab === 'diff' && (
+                    <DiffPreviewPanel prDetails={prDetails} />
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -356,7 +473,7 @@ export default function ContentApp() {
         onSaveSuccess={() => {
           setError(null)
           setRevError(null)
-          setTokenRefreshKey(k => k + 1) // trigger token re-check in ReviewerPanel
+          setTokenRefreshKey(k => k + 1)
         }}
       />
     </div>

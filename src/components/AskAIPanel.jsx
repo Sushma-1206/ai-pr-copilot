@@ -254,7 +254,7 @@ function renderInline(text) {
   })
 }
 
-export default function AskAIPanel({ prDetails, analysisResult, onOpenApiKeyModal }) {
+export default function AskAIPanel({ prDetails, analysisResult, onOpenApiKeyModal, initialPrompt, onClearInitialPrompt }) {
   const [question, setQuestion] = useState('')
   const [chatHistory, setChatHistory] = useState([])
   const [loading, setLoading] = useState(false)
@@ -264,6 +264,13 @@ export default function AskAIPanel({ prDetails, analysisResult, onOpenApiKeyModa
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatHistory])
+
+  useEffect(() => {
+    if (initialPrompt && prDetails) {
+      handleAsk(initialPrompt)
+      onClearInitialPrompt?.()
+    }
+  }, [initialPrompt, prDetails])
 
   async function handleAsk(q) {
     const text = q || question.trim()

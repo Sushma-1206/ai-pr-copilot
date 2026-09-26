@@ -1,4 +1,4 @@
-export default function ReadinessScore({ score, riskLevel, breakdown }) {
+export default function ReadinessScore({ score, riskLevel, breakdown, counts }) {
   if (score == null) return null
 
   const normalizedScore = Math.max(0, Math.min(100, Math.round(score)))
@@ -22,7 +22,7 @@ export default function ReadinessScore({ score, riskLevel, breakdown }) {
   const riskConfig = {
     low: { bg: 'bg-emerald-50 text-emerald-700 border-emerald-200/80', dot: 'bg-emerald-500', label: 'Low Risk' },
     medium: { bg: 'bg-amber-50 text-amber-700 border-amber-200/80', dot: 'bg-amber-500', label: 'Medium Risk' },
-    high: { bg: 'bg-orange-50 text-orange-700 border-orange-200/80', dot: 'bg-orange-500', label: 'High Risk' },
+    high: { bg: 'bg-rose-50 text-rose-700 border-rose-200/80', dot: 'bg-rose-500', label: 'High Risk' },
     critical: { bg: 'bg-rose-50 text-rose-700 border-rose-200/80', dot: 'bg-rose-500', label: 'Critical Risk' }
   }
 
@@ -69,8 +69,8 @@ export default function ReadinessScore({ score, riskLevel, breakdown }) {
             <span className={`text-base font-extrabold leading-none tracking-tight ${theme.text}`}>
               {normalizedScore}
             </span>
-            <span className="text-[8px] font-semibold text-gray-400 mt-0.5 tracking-wider uppercase">
-              Score
+            <span className="text-[9px] font-semibold text-gray-400 mt-0.5 tracking-tight">
+              /100
             </span>
           </div>
         </div>
@@ -85,13 +85,35 @@ export default function ReadinessScore({ score, riskLevel, breakdown }) {
           </div>
           <p className="text-[10px] text-gray-500 leading-snug">
             {normalizedScore >= 80
-              ? '✨ High quality! PR is ready for smooth review.'
+              ? '• High quality! PR is ready for smooth review.'
               : normalizedScore >= 60
-              ? '⚡ Minor issues found. Review the suggested fixes.'
-              : '⚠️ Needs attention before merging to avoid regressions.'}
+              ? '• Minor issues found. Review the suggested fixes.'
+              : '• Needs attention before requesting a review.'}
           </p>
         </div>
       </div>
+
+      {/* Severity Count Pills row */}
+      {counts && (
+        <div className="flex items-center gap-1.5 pt-2 border-t border-gray-100 flex-wrap">
+          <span className="flex items-center gap-1 font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 text-[10px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+            {counts.critical} Critical
+          </span>
+          <span className="flex items-center gap-1 font-semibold text-orange-700 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200 text-[10px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+            {counts.high} High
+          </span>
+          <span className="flex items-center gap-1 font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 text-[10px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            {counts.medium} Medium
+          </span>
+          <span className="flex items-center gap-1 font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[10px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            {counts.passed} Passed
+          </span>
+        </div>
+      )}
 
       {/* Optional breakdown */}
       {breakdown && breakdown.length > 0 && (
@@ -99,11 +121,7 @@ export default function ReadinessScore({ score, riskLevel, breakdown }) {
           {breakdown.map((item, i) => (
             <div key={i} className="flex items-center justify-between bg-gray-50/80 rounded-lg px-2.5 py-1 border border-gray-100">
               <span className="text-[10px] text-gray-600 font-medium truncate">{item.label}</span>
-              <span className={`text-[10px] font-bold ${
-                item.score >= 80 ? 'text-emerald-600' : item.score >= 60 ? 'text-amber-600' : 'text-rose-600'
-              }`}>
-                {item.score}%
-              </span>
+              <span className="text-[10px] font-bold text-gray-900 ml-1">+{item.value}%</span>
             </div>
           ))}
         </div>
@@ -111,4 +129,3 @@ export default function ReadinessScore({ score, riskLevel, breakdown }) {
     </div>
   )
 }
-
