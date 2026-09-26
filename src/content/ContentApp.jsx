@@ -1,6 +1,32 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Component } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import AuthPanel from '../components/AuthPanel'
+
+// Top-level error boundary: prevents blank panel on any crash
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ width: 340, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, fontFamily: 'sans-serif', fontSize: 12, color: '#374151', boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 18 }}>🤖</span>
+            <strong style={{ color: '#1e1b4b' }}>AI PR Copilot</strong>
+          </div>
+          <p style={{ color: '#ef4444', marginBottom: 8, fontSize: 11 }}>⚠️ Extension encountered an error. Please reload the page or the extension.</p>
+          <p style={{ color: '#6b7280', fontSize: 10 }}>{this.state.error?.message || 'Unknown error'}</p>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 import OverviewPanel from '../components/OverviewPanel'
 import ReviewerOverviewPanel from '../components/ReviewerOverviewPanel'
 import IssuesPanel from '../components/IssuesPanel'
@@ -37,13 +63,20 @@ export default function ContentApp() {
   const [collapsed, setCollapsed] = useState(false)
   
   // Persistent Role Selection: 'contributor' | 'reviewer'
-  const [userRole, setUserRole] = useState(() => {
+  // Use chrome.storage instead of localStorage (safer in content scripts)
+  const [userRole, setUserRole] = useState('contributor')
+
+  useEffect(() => {
     try {
-      return localStorage.getItem('ai_pr_copilot_user_role') || 'contributor'
-    } catch {
-      return 'contributor'
+      chrome.storage.local.get(['ai_pr_copilot_user_role'], (res) => {
+        if (res && res.ai_pr_copilot_user_role) {
+          setUserRole(res.ai_pr_copilot_user_role)
+        }
+      })
+    } catch (e) {
+      // ignore
     }
-  })
+  }, [])
 
   const [activeTab, setActiveTab] = useState('overview')
   const [pendingAskPrompt, setPendingAskPrompt] = useState(null)
@@ -75,9 +108,9 @@ export default function ContentApp() {
     const nextRole = userRole === 'contributor' ? 'reviewer' : 'contributor'
     setUserRole(nextRole)
     try {
-      localStorage.setItem('ai_pr_copilot_user_role', nextRole)
+      chrome.storage.local.set({ ai_pr_copilot_user_role: nextRole })
     } catch (e) {
-      console.warn('Could not persist user role', e)
+      // ignore
     }
     setActiveTab('overview')
   }
