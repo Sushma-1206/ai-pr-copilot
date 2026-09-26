@@ -134,11 +134,16 @@ export default function ContentApp() {
   return (
     <div className="w-[460px] bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden font-sans text-xs">
       {/* Header */}
-      <div className="flex items-center justify-between px-3.5 py-2.5 bg-gray-900 text-white">
+      <div className="flex items-center justify-between px-3.5 py-2.5 bg-gradient-to-r from-gray-950 via-slate-900 to-indigo-950 text-white border-b border-gray-800/80 shadow-xs">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-base shrink-0">🤖</span>
+          <div className="relative flex items-center justify-center">
+            <span className="text-base shrink-0">🤖</span>
+            <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-gray-900 animate-pulse" />
+          </div>
           <div className="min-w-0">
-            <h2 className="text-xs font-bold tracking-tight">AI PR Copilot</h2>
+            <h2 className="text-xs font-bold tracking-tight text-white flex items-center gap-1.5">
+              <span>AI PR Copilot</span>
+            </h2>
             {prDetails?.repoIdentifier && (
               <p className="text-[10px] text-gray-400 font-mono truncate">
                 {prDetails.repoIdentifier}{prDetails.prNumber ? ` • PR #${prDetails.prNumber}` : ''}
@@ -146,24 +151,26 @@ export default function ContentApp() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className={`text-gray-300 hover:text-white text-xs px-1.5 py-0.5 rounded hover:bg-gray-800 transition ${showSettings ? 'text-white bg-gray-700' : ''}`}
+            className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
+              showSettings ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'
+            }`}
             title="Settings, Rules & History"
           >
             ⚙️
           </button>
           <button
             onClick={() => setShowKeyModal(true)}
-            className="text-gray-300 hover:text-white text-xs px-1.5 py-0.5 rounded hover:bg-gray-800 transition"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 text-xs transition cursor-pointer"
             title="Configure API Keys"
           >
             🔑
           </button>
           <button
             onClick={() => setCollapsed(true)}
-            className="text-gray-400 hover:text-white text-sm"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 text-xs transition cursor-pointer font-bold"
             aria-label="Collapse panel"
           >
             ✕
@@ -193,12 +200,12 @@ export default function ContentApp() {
               <h3 className="font-semibold text-gray-900 text-sm">⚙️ Settings</h3>
               <button
                 onClick={() => setShowSettings(false)}
-                className="text-xs text-gray-500 hover:text-gray-800"
+                className="text-xs text-gray-500 hover:text-gray-800 cursor-pointer"
               >
                 ← Back
               </button>
             </div>
-            <div className="flex border-b border-gray-200">
+            <div className="flex bg-gray-100/90 p-1 rounded-xl gap-1">
               {[
                 { key: 'rules', label: '📏 Rules' },
                 { key: 'history', label: '📜 History' }
@@ -206,10 +213,10 @@ export default function ContentApp() {
                 <button
                   key={t.key}
                   onClick={() => setSettingsTab(t.key)}
-                  className={`flex-1 py-1.5 text-xs font-medium border-b-2 transition ${
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                     settingsTab === t.key
-                      ? 'border-indigo-600 text-indigo-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                      ? 'bg-white text-indigo-700 shadow-2xs font-bold'
+                      : 'text-gray-500 hover:text-gray-800'
                   }`}
                 >
                   {t.label}
@@ -226,35 +233,38 @@ export default function ContentApp() {
           <div className="space-y-3">
             {/* PR Title bar */}
             {prDetails?.title && (
-              <div className="px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+              <div className="px-2.5 py-2 bg-gradient-to-r from-gray-50 to-indigo-50/30 border border-gray-200/90 rounded-xl shadow-2xs">
                 <p className="font-semibold text-gray-900 truncate text-[11px]" title={prDetails.title}>
                   {prDetails.title}
                 </p>
-                <div className="flex items-center justify-between text-[10px] text-gray-500 mt-0.5">
-                  <span>PR #{prDetails.prNumber}</span>
-                  <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded">
+                <div className="flex items-center justify-between text-[10px] text-gray-500 mt-1">
+                  <span className="font-medium text-indigo-700">PR #{prDetails.prNumber}</span>
+                  <span className="bg-gray-200/80 text-gray-700 px-1.5 py-0.5 rounded-md font-mono text-[9px]">
                     {prDetails.filesCount} files changed
                   </span>
                 </div>
               </div>
             )}
 
-            {/* Navigation tabs */}
-            <div className="flex border-b border-gray-200">
-              {PRIMARY_TABS.map(tab => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`flex-1 py-1.5 text-[10px] font-medium border-b-2 transition flex flex-col items-center gap-0.5 ${
-                    activeTab === tab.key
-                      ? 'border-indigo-600 text-indigo-600'
-                      : 'border-transparent text-gray-400 hover:text-gray-600'
-                  }`}
-                >
-                  <span>{tab.icon}</span>
-                  <span>{tab.label}</span>
-                </button>
-              ))}
+            {/* Segmented Navigation tabs */}
+            <div className="flex bg-gray-100/90 p-1 rounded-xl gap-1 shadow-inner">
+              {PRIMARY_TABS.map(tab => {
+                const isActive = activeTab === tab.key
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`flex-1 py-1.5 px-1 rounded-lg text-[10px] font-semibold transition-all duration-150 flex items-center justify-center gap-1 cursor-pointer ${
+                      isActive
+                        ? 'bg-white text-indigo-700 shadow-2xs font-bold scale-[1.02]'
+                        : 'text-gray-500 hover:text-gray-800 hover:bg-white/40'
+                    }`}
+                  >
+                    <span className="text-xs">{tab.icon}</span>
+                    <span>{tab.label}</span>
+                  </button>
+                )
+              })}
             </div>
 
             {/* Tab Content */}

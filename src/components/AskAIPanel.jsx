@@ -12,9 +12,59 @@ const SUGGESTIONS = [
   'What happens if this API fails?'
 ]
 
+function CodeBlock({ code, lang }) {
+  const [copied, setCopied] = useState(false)
+  function handleCopy() {
+    navigator.clipboard.writeText(code)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  return (
+    <div className="my-2 rounded-lg overflow-hidden border border-gray-800 bg-gray-900 shadow-sm">
+      <div className="flex items-center justify-between px-2.5 py-1 bg-gray-950 text-[9px] text-gray-400 border-b border-gray-800">
+        <span className="font-mono uppercase tracking-wider">{lang || 'code'}</span>
+        <button
+          onClick={handleCopy}
+          className="hover:text-white transition flex items-center gap-1 cursor-pointer"
+        >
+          {copied ? '✓ Copied' : '📋 Copy'}
+        </button>
+      </div>
+      <pre className="p-2.5 text-[10.5px] font-mono text-emerald-300 overflow-x-auto whitespace-pre leading-relaxed">
+        {code}
+      </pre>
+    </div>
+  )
+}
+
+function SectionCard({ title, children, defaultOpen = true }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className="my-1.5 border border-indigo-100/90 rounded-lg overflow-hidden bg-white shadow-2xs">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-2.5 py-1.5 bg-indigo-50/40 hover:bg-indigo-50/70 transition text-left cursor-pointer"
+      >
+        <span className="font-bold text-[11px] text-gray-800 flex items-center gap-1.5">
+          <span className="text-[9px] text-indigo-600">▶</span>
+          <span>{title}</span>
+        </span>
+        <span className="text-[10px] text-gray-400 font-bold ml-1">
+          {open ? '▴' : '▾'}
+        </span>
+      </button>
+      {open && (
+        <div className="p-2.5 pt-2 text-[11px] text-gray-700 space-y-1.5 border-t border-indigo-50">
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /**
- * Minimal markdown renderer for AI chat responses.
- * Handles: headings, bold, italic, inline code, code blocks, tables, lists, line breaks.
+ * Enhanced markdown renderer for AI chat responses.
+ * Handles: headings, bold, italic, inline code, code blocks, tables, lists, line breaks, collapsibles.
  */
 function MarkdownMessage({ content }) {
   const lines = content.split('\n')
@@ -34,9 +84,7 @@ function MarkdownMessage({ content }) {
         i++
       }
       elements.push(
-        <pre key={i} className="bg-gray-800 text-green-300 rounded-lg p-2.5 text-[10px] font-mono overflow-x-auto whitespace-pre my-1.5">
-          {codeLines.join('\n')}
-        </pre>
+        <CodeBlock key={i} code={codeLines.join('\n')} lang={lang} />
       )
       i++
       continue
@@ -49,7 +97,6 @@ function MarkdownMessage({ content }) {
         tableLines.push(lines[i])
         i++
       }
-      // Parse table - filter out separator rows (---|---) 
       const rows = tableLines.filter(l => !/^\s*\|?[\s\-|:]+\|?\s*$/.test(l))
       if (rows.length > 0) {
         const parseRow = (row) =>
@@ -59,7 +106,7 @@ function MarkdownMessage({ content }) {
         const dataRows = rows.slice(1)
 
         elements.push(
-          <div key={i} className="overflow-x-auto my-1.5 rounded-lg border border-gray-200">
+          <div key={i} className="overflow-x-auto my-1.5 rounded-lg border border-gray-200 shadow-2xs">
             <table className="w-full text-[10px] border-collapse">
               <thead className="bg-gray-100">
                 <tr>
@@ -88,32 +135,16 @@ function MarkdownMessage({ content }) {
       continue
     }
 
-    // Heading 3
-    if (line.startsWith('### ')) {
+    // Headings
+    if (line.startsWith('### ') || line.startsWith('## ') || line.startsWith('# ')) {
+      const headingText = line.replace(/^#+\s*/, '')
       elements.push(
-        <p key={i} className="font-bold text-[11px] text-gray-900 mt-2 mb-0.5">
-          {renderInline(line.slice(4))}
-        </p>
-      )
-      i++; continue
-    }
-
-    // Heading 2
-    if (line.startsWith('## ')) {
-      elements.push(
-        <p key={i} className="font-bold text-[12px] text-gray-900 mt-2 mb-1 border-b border-gray-200 pb-0.5">
-          {renderInline(line.slice(3))}
-        </p>
-      )
-      i++; continue
-    }
-
-    // Heading 1
-    if (line.startsWith('# ')) {
-      elements.push(
-        <p key={i} className="font-extrabold text-[13px] text-gray-900 mt-2 mb-1">
-          {renderInline(line.slice(2))}
-        </p>
+        <div key={i} className="flex items-center gap-1.5 pt-2 pb-0.5 border-b border-gray-100">
+          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+          <h4 className="font-bold text-[11.5px] text-gray-900 tracking-tight">
+            {renderInline(headingText)}
+          </h4>
+        </div>
       )
       i++; continue
     }
@@ -126,10 +157,10 @@ function MarkdownMessage({ content }) {
         i++
       }
       elements.push(
-        <ul key={i} className="my-1 space-y-0.5 pl-3">
+        <ul key={i} className="my-1.5 space-y-1 pl-1">
           {listItems.map((item, li) => (
-            <li key={li} className="flex items-start gap-1.5 text-[11px] text-gray-700">
-              <span className="text-indigo-400 mt-0.5 shrink-0">•</span>
+            <li key={li} className="flex items-start gap-1.5 text-[11px] text-gray-700 leading-snug">
+              <span className="text-indigo-500 mt-1 shrink-0 text-[8px]">●</span>
               <span>{renderInline(item)}</span>
             </li>
           ))}
@@ -141,16 +172,15 @@ function MarkdownMessage({ content }) {
     // Ordered list item
     if (/^\d+\. /.test(line)) {
       const listItems = []
-      let num = 1
       while (i < lines.length && /^\d+\. /.test(lines[i])) {
         listItems.push(lines[i].replace(/^\d+\. /, ''))
         i++
       }
       elements.push(
-        <ol key={i} className="my-1 space-y-0.5 pl-3">
+        <ol key={i} className="my-1.5 space-y-1 pl-1">
           {listItems.map((item, li) => (
-            <li key={li} className="flex items-start gap-1.5 text-[11px] text-gray-700">
-              <span className="text-indigo-500 font-semibold shrink-0">{li + 1}.</span>
+            <li key={li} className="flex items-start gap-1.5 text-[11px] text-gray-700 leading-snug">
+              <span className="text-indigo-600 font-bold shrink-0 text-[10px] w-4">{li + 1}.</span>
               <span>{renderInline(item)}</span>
             </li>
           ))}
@@ -167,7 +197,7 @@ function MarkdownMessage({ content }) {
 
     // Blank line
     if (line.trim() === '') {
-      elements.push(<div key={i} className="h-1.5" />)
+      elements.push(<div key={i} className="h-1" />)
       i++; continue
     }
 
