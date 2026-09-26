@@ -65,5 +65,38 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true
   }
 
+  if (message?.type === 'GITHUB_API_REQUEST') {
+    const { url, method = 'GET', headers = {}, body } = message
+    fetch(url, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+      credentials: 'omit'
+    })
+      .then(async (res) => {
+        const text = await res.text()
+        let data = null
+        try {
+          data = JSON.parse(text)
+        } catch {
+          data = text
+        }
+        sendResponse({
+          ok: res.ok,
+          status: res.status,
+          statusText: res.statusText,
+          data
+        })
+      })
+      .catch((err) => {
+        sendResponse({
+          ok: false,
+          status: 0,
+          error: err?.message || 'GitHub API request failed in background worker.'
+        })
+      })
+    return true
+  }
+
   return false
 })
