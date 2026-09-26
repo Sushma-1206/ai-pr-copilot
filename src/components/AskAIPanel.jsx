@@ -12,6 +12,218 @@ const SUGGESTIONS = [
   'What happens if this API fails?'
 ]
 
+/**
+ * Minimal markdown renderer for AI chat responses.
+ * Handles: headings, bold, italic, inline code, code blocks, tables, lists, line breaks.
+ */
+function MarkdownMessage({ content }) {
+  const lines = content.split('\n')
+  const elements = []
+  let i = 0
+
+  while (i < lines.length) {
+    const line = lines[i]
+
+    // Code block
+    if (line.startsWith('```')) {
+      const lang = line.slice(3).trim()
+      const codeLines = []
+      i++
+      while (i < lines.length && !lines[i].startsWith('```')) {
+        codeLines.push(lines[i])
+        i++
+      }
+      elements.push(
+        <pre key={i} className="bg-gray-800 text-green-300 rounded-lg p-2.5 text-[10px] font-mono overflow-x-auto whitespace-pre my-1.5">
+          {codeLines.join('\n')}
+        </pre>
+      )
+      i++
+      continue
+    }
+
+    // Table detection: line has | separators
+    if (line.includes('|') && line.trim().startsWith('|')) {
+      const tableLines = []
+      while (i < lines.length && lines[i].includes('|') && lines[i].trim().startsWith('|')) {
+        tableLines.push(lines[i])
+        i++
+      }
+      // Parse table - filter out separator rows (---|---) 
+      const rows = tableLines.filter(l => !/^\s*\|?[\s\-|:]+\|?\s*$/.test(l))
+      if (rows.length > 0) {
+        const parseRow = (row) =>
+          row.split('|').map(c => c.trim()).filter((_, idx, arr) => idx > 0 && idx < arr.length - 1)
+
+        const headers = parseRow(rows[0])
+        const dataRows = rows.slice(1)
+
+        elements.push(
+          <div key={i} className="overflow-x-auto my-1.5 rounded-lg border border-gray-200">
+            <table className="w-full text-[10px] border-collapse">
+              <thead className="bg-gray-100">
+                <tr>
+                  {headers.map((h, hi) => (
+                    <th key={hi} className="px-2 py-1 text-left font-semibold text-gray-700 border-b border-gray-200">
+                      {renderInline(h)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {dataRows.map((row, ri) => (
+                  <tr key={ri} className={ri % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    {parseRow(row).map((cell, ci) => (
+                      <td key={ci} className="px-2 py-1 text-gray-700 border-b border-gray-100 align-top">
+                        {renderInline(cell)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      }
+      continue
+    }
+
+    // Heading 3
+    if (line.startsWith('### ')) {
+      elements.push(
+        <p key={i} className="font-bold text-[11px] text-gray-900 mt-2 mb-0.5">
+          {renderInline(line.slice(4))}
+        </p>
+      )
+      i++; continue
+    }
+
+    // Heading 2
+    if (line.startsWith('## ')) {
+      elements.push(
+        <p key={i} className="font-bold text-[12px] text-gray-900 mt-2 mb-1 border-b border-gray-200 pb-0.5">
+          {renderInline(line.slice(3))}
+        </p>
+      )
+      i++; continue
+    }
+
+    // Heading 1
+    if (line.startsWith('# ')) {
+      elements.push(
+        <p key={i} className="font-extrabold text-[13px] text-gray-900 mt-2 mb-1">
+          {renderInline(line.slice(2))}
+        </p>
+      )
+      i++; continue
+    }
+
+    // Unordered list item
+    if (/^[-*+] /.test(line)) {
+      const listItems = []
+      while (i < lines.length && /^[-*+] /.test(lines[i])) {
+        listItems.push(lines[i].slice(2))
+        i++
+      }
+      elements.push(
+        <ul key={i} className="my-1 space-y-0.5 pl-3">
+          {listItems.map((item, li) => (
+            <li key={li} className="flex items-start gap-1.5 text-[11px] text-gray-700">
+              <span className="text-indigo-400 mt-0.5 shrink-0">•</span>
+              <span>{renderInline(item)}</span>
+            </li>
+          ))}
+        </ul>
+      )
+      continue
+    }
+
+    // Ordered list item
+    if (/^\d+\. /.test(line)) {
+      const listItems = []
+      let num = 1
+      while (i < lines.length && /^\d+\. /.test(lines[i])) {
+        listItems.push(lines[i].replace(/^\d+\. /, ''))
+        i++
+      }
+      elements.push(
+        <ol key={i} className="my-1 space-y-0.5 pl-3">
+          {listItems.map((item, li) => (
+            <li key={li} className="flex items-start gap-1.5 text-[11px] text-gray-700">
+              <span className="text-indigo-500 font-semibold shrink-0">{li + 1}.</span>
+              <span>{renderInline(item)}</span>
+            </li>
+          ))}
+        </ol>
+      )
+      continue
+    }
+
+    // Horizontal rule
+    if (/^[-*_]{3,}$/.test(line.trim())) {
+      elements.push(<hr key={i} className="border-gray-200 my-2" />)
+      i++; continue
+    }
+
+    // Blank line
+    if (line.trim() === '') {
+      elements.push(<div key={i} className="h-1.5" />)
+      i++; continue
+    }
+
+    // Normal paragraph
+    elements.push(
+      <p key={i} className="text-[11px] text-gray-700 leading-relaxed">
+        {renderInline(line)}
+      </p>
+    )
+    i++
+  }
+
+  return <div className="space-y-0.5">{elements}</div>
+}
+
+/**
+ * Render inline markdown: **bold**, *italic*, `code`, ~~strikethrough~~
+ */
+function renderInline(text) {
+  if (!text) return null
+
+  // Split by inline patterns and rebuild as React elements
+  const parts = []
+  let remaining = text
+  let key = 0
+
+  // Process inline patterns in order
+  const inlinePatterns = [
+    { regex: /`([^`]+)`/g, render: (m, g) => <code key={key++} className="bg-gray-200 text-gray-800 px-1 py-0.5 rounded text-[10px] font-mono">{g}</code> },
+    { regex: /\*\*([^*]+)\*\*/g, render: (m, g) => <strong key={key++} className="font-semibold text-gray-900">{g}</strong> },
+    { regex: /\*([^*]+)\*/g, render: (m, g) => <em key={key++} className="italic">{g}</em> },
+    { regex: /~~([^~]+)~~/g, render: (m, g) => <del key={key++} className="line-through text-gray-400">{g}</del> },
+  ]
+
+  // Use a simple token-based approach for inline rendering
+  // We'll split on the combined pattern and reassemble
+  const combinedRegex = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|~~[^~]+~~)/g
+  const tokens = text.split(combinedRegex)
+
+  return tokens.map((token, idx) => {
+    if (token.startsWith('**') && token.endsWith('**')) {
+      return <strong key={idx} className="font-semibold text-gray-900">{token.slice(2, -2)}</strong>
+    }
+    if (token.startsWith('*') && token.endsWith('*') && token.length > 2) {
+      return <em key={idx} className="italic">{token.slice(1, -1)}</em>
+    }
+    if (token.startsWith('`') && token.endsWith('`')) {
+      return <code key={idx} className="bg-gray-200 text-indigo-700 px-1 py-0.5 rounded text-[10px] font-mono">{token.slice(1, -1)}</code>
+    }
+    if (token.startsWith('~~') && token.endsWith('~~')) {
+      return <del key={idx} className="line-through text-gray-400">{token.slice(2, -2)}</del>
+    }
+    return token
+  })
+}
+
 export default function AskAIPanel({ prDetails, analysisResult, onOpenApiKeyModal }) {
   const [question, setQuestion] = useState('')
   const [chatHistory, setChatHistory] = useState([])
@@ -45,7 +257,7 @@ export default function AskAIPanel({ prDetails, analysisResult, onOpenApiKeyModa
     } catch (err) {
       if (err.message === 'API_KEY_MISSING') {
         onOpenApiKeyModal?.()
-        setChatHistory(chatHistory) // revert
+        setChatHistory(chatHistory)
         return
       }
       setError(err.message || 'Chat request failed.')
@@ -73,7 +285,7 @@ export default function AskAIPanel({ prDetails, analysisResult, onOpenApiKeyModa
         </div>
       </div>
 
-      {/* Suggestions (show only when empty) */}
+      {/* Suggestions (show only when chat is empty) */}
       {chatHistory.length === 0 && !loading && (
         <div className="grid grid-cols-2 gap-1.5">
           {SUGGESTIONS.map((s, i) => (
@@ -90,21 +302,26 @@ export default function AskAIPanel({ prDetails, analysisResult, onOpenApiKeyModa
 
       {/* Chat Messages */}
       {chatHistory.length > 0 && (
-        <div className="flex-1 overflow-y-auto space-y-2 max-h-64 pr-1">
+        <div className="flex-1 overflow-y-auto space-y-3 max-h-72 pr-0.5">
           {chatHistory.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] rounded-xl px-2.5 py-2 text-[11px] leading-relaxed ${
-                msg.role === 'user'
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-100 text-gray-800 border border-gray-200'
-              }`}>
-                {msg.content}
-              </div>
+              {msg.role === 'user' ? (
+                /* User bubble — plain text is fine */
+                <div className="max-w-[85%] rounded-xl px-3 py-2 text-[11px] leading-relaxed bg-indigo-600 text-white">
+                  {msg.content}
+                </div>
+              ) : (
+                /* AI bubble — rendered markdown */
+                <div className="max-w-[95%] rounded-xl px-3 py-2.5 bg-white border border-gray-200 shadow-sm">
+                  <MarkdownMessage content={msg.content} />
+                </div>
+              )}
             </div>
           ))}
+
           {loading && (
             <div className="flex justify-start">
-              <div className="bg-gray-100 border border-gray-200 rounded-xl px-2.5 py-2 text-[11px] text-gray-500 flex items-center gap-1.5">
+              <div className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-[11px] text-gray-400 flex items-center gap-1.5 shadow-sm">
                 <span className="animate-spin text-xs">🌀</span> Thinking...
               </div>
             </div>
@@ -133,7 +350,7 @@ export default function AskAIPanel({ prDetails, analysisResult, onOpenApiKeyModa
         <button
           onClick={() => handleAsk()}
           disabled={loading || !question.trim() || !prDetails}
-          className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-semibold text-xs rounded-lg transition self-end"
+          className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-semibold text-xs rounded-lg transition self-end"
         >
           {loading ? '...' : '↑'}
         </button>

@@ -18,12 +18,23 @@ export default function AuthPanel({ onAuthenticated }) {
     try {
       const result = await signInWithGoogle()
       if (!result.success) {
-        setFormError(result.error)
+        const msg = result.error || ''
+        // Chrome identity API stuck - give clear fix instructions
+        if (msg.toLowerCase().includes('one web auth') || msg.toLowerCase().includes('already') || msg.toLowerCase().includes('flow')) {
+          setFormError('Google sign-in is stuck. Please fully quit Chrome (Cmd+Q on Mac, not just close the window) and reopen it, then try again. Alternatively, use email/password below.')
+        } else if (msg.toLowerCase().includes('cancelled') || msg.toLowerCase().includes('canceled')) {
+          setFormError('Sign-in was cancelled. Click the button again to retry.')
+        } else {
+          setFormError(msg || 'Google sign-in failed. Try email/password instead.')
+        }
       } else if (onAuthenticated) {
         onAuthenticated()
       }
+    } catch (err) {
+      setFormError('Google sign-in encountered an error. Please use email/password below.')
     } finally {
-      setSubmitting(false)
+      // Small cooldown so button can't be hammered
+      setTimeout(() => setSubmitting(false), 1500)
     }
   }
 
