@@ -189,6 +189,27 @@ export async function postBatchReview({ repoIdentifier, prNumber, reviewResult }
   )
 
   if (!res.ok) {
+    // If GitHub rejects APPROVE/REQUEST_CHANGES (e.g. you are the author), fallback to COMMENT
+    if (res.status === 422 && event !== 'COMMENT') {
+      const retryRes = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/reviews`,
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            body: bodyContent,
+            event: 'COMMENT'
+          })
+        }
+      )
+      
+      if (!retryRes.ok) {
+        const err = await retryRes.json().catch(() => ({}))
+        throw new Error(err.message || 'Failed to post review comment to GitHub.')
+      }
+      return await retryRes.json()
+    }
+    
     const err = await res.json().catch(() => ({}))
     throw new Error(err.message || 'Failed to post review comment to GitHub.')
   }
