@@ -126,15 +126,17 @@ ai-pr-copilot/
    ```
 
 4. **Configure Google sign-in:**
-   - In Google Cloud, create a **Web application** OAuth client and add
-     `https://<your-project-ref>.supabase.co/auth/v1/callback` as an authorized redirect URI.
-   - In Supabase Dashboard → **Authentication → Sign In / Providers → Google**, enable Google and add that client ID and secret.
-   - In Supabase Dashboard → **Authentication → URL Configuration → Redirect URLs**, add:
-     `https://abbdjaagnpegifekmkelmccahjigbdnp.chromiumapp.org/supabase-auth`
+   - In Google Cloud, create a **Chrome Extension** OAuth client with item ID
+     `abbdjaagnpegifekmkelmccahjigbdnp`.
+   - Put that public client ID in the manifest's `oauth2.client_id` field.
+   - In Supabase Dashboard → **Authentication → Sign In / Providers → Google**,
+     enable Google and append the Chrome client ID to **Client IDs**. Keep the
+     existing Web client first if more than one client ID is configured.
 
-   The manifest contains a public extension key so this unpacked extension ID
-   and callback URL stay stable. The Google client secret belongs only in the
-   Supabase Dashboard; never put it in `.env` or extension source code.
+   The manifest contains a public extension key so the unpacked extension ID
+   stays stable. Chrome receives the Google ID token at
+   `https://abbdjaagnpegifekmkelmccahjigbdnp.chromiumapp.org` and exchanges it
+   with Supabase; no Supabase redirect URL is needed for this extension flow.
 
 5. **Build the extension:**
    ```bash

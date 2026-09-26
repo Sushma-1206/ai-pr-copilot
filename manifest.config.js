@@ -27,6 +27,10 @@ export default defineManifest({
     service_worker: 'src/background/background.js',
     type: 'module'
   },
+  oauth2: {
+    client_id: '263842521415-0d8fmnm9409smbhl1uias551j7aqv54j.apps.googleusercontent.com',
+    scopes: ['openid', 'email', 'profile']
+  },
   content_scripts: [
     {
       matches: [
