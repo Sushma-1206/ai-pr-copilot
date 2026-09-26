@@ -35,7 +35,7 @@ export async function saveAISettings(settings) {
  */
 export async function runAIReview({ prDetails, mode = 'developer' }) {
   if (!prDetails || !prDetails.rawDiff) {
-    throw new Error('No diff found to review.')
+    throw new Error('No diff found to review. This usually means the GitHub API rate limit was hit. Fix: click ⚙️ Settings → add your GitHub Personal Access Token (this increases the limit from 60 to 5000 req/hr).')
   }
 
   // 1. Fetch custom repository rules

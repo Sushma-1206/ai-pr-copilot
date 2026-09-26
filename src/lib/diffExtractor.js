@@ -1,6 +1,7 @@
 /**
  * Diff & Metadata Extractor for GitHub and GitLab PR pages.
  */
+import { getGitHubToken } from './githubService'
 
 export async function extractPRDetails() {
   const url = window.location.href
@@ -61,17 +62,21 @@ async function extractGitHubPRDetails(pathname) {
     description = bodyEl.textContent.trim()
   }
 
-  // 3. Raw Diff Extraction Strategy
+  // 3. Raw Diff Extraction — use GitHub token if available (5000 req/hr vs 60 req/hr unauthenticated)
   let rawDiff = ''
+  const githubToken = await getGitHubToken().catch(() => '')
+  const authHeaders = githubToken
+    ? { Authorization: `Bearer ${githubToken}`, Accept: 'application/vnd.github.v3.diff' }
+    : { Accept: 'application/vnd.github.v3.diff' }
 
-  // Strategy A: GitHub API diff endpoint (works for all public repos)
+  // Strategy A: GitHub API diff endpoint (authenticated if token available)
   try {
     const apiDiffUrl = `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}`
-    const res = await fetch(apiDiffUrl, {
-      headers: { Accept: 'application/vnd.github.v3.diff' }
-    })
+    const res = await fetch(apiDiffUrl, { headers: authHeaders })
     if (res.ok) {
       rawDiff = await res.text()
+    } else if (res.status === 403 || res.status === 429) {
+      console.warn('[AI PR Copilot] GitHub API rate-limited. Add a GitHub token in Settings to increase limit.')
     }
   } catch (err) {
     console.warn('[AI PR Copilot] GitHub API diff fetch failed', err)
@@ -81,7 +86,8 @@ async function extractGitHubPRDetails(pathname) {
   if (!rawDiff) {
     try {
       const webDiffUrl = `https://github.com/${owner}/${repo}/pull/${prNumber}.diff`
-      const res = await fetch(webDiffUrl)
+      const fetchHeaders = githubToken ? { Authorization: `Bearer ${githubToken}` } : {}
+      const res = await fetch(webDiffUrl, { headers: fetchHeaders })
       if (res.ok) {
         rawDiff = await res.text()
       }
