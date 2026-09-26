@@ -98,8 +98,17 @@ export default function OverviewPanel({
         </div>
       )}
 
+      {/* Empty state — before analysis is run */}
+      {!loading && !reviewResult && (
+        <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+          <span className="text-4xl">🔍</span>
+          <p className="text-gray-600 font-semibold text-xs">Click <span className="text-indigo-600">"Analyze PR"</span> above to get started.</p>
+          <p className="text-gray-400 text-[10px]">AI will review your PR for issues, risks, and suggestions.</p>
+        </div>
+      )}
+
       {/* Hero Card */}
-      {!loading && (
+      {!loading && reviewResult && (
         <div className="relative p-3.5 bg-gradient-to-br from-indigo-50/80 via-purple-50/40 to-blue-50/70 border border-indigo-100/90 rounded-2xl shadow-xs overflow-hidden">
           <div className="flex items-center justify-between gap-3">
             {/* Left: Circular gauge */}
@@ -198,227 +207,229 @@ export default function OverviewPanel({
         </div>
       )}
 
-      {/* Top Issues Section */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <span className="font-bold text-gray-900 text-xs">Top Issues</span>
-            <span className="w-4 h-4 rounded-full bg-indigo-100 text-indigo-700 font-bold text-[9px] flex items-center justify-center">
-              {allIssues.length || 4}
-            </span>
-          </div>
-          <button
-            onClick={() => onTabChange?.('issues')}
-            className="text-[10.5px] font-semibold text-indigo-600 hover:text-indigo-800 transition cursor-pointer flex items-center gap-0.5"
-          >
-            <span>View all</span>
-            <span>→</span>
-          </button>
-        </div>
-
-        {/* 3 prioritized issues */}
-        <div className="space-y-1.5">
-          {/* Issue 1: Error handling */}
-          <div className="p-2.5 bg-white border border-gray-200/90 rounded-xl shadow-2xs hover:border-gray-300 transition flex items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <span className="w-6 h-6 rounded-full bg-rose-500 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
-                !
-              </span>
-              <div className="min-w-0">
-                <p className="font-bold text-[11px] text-gray-900 truncate">
-                  Error handling not fully verified
-                </p>
-                <p className="text-[10px] text-gray-500 truncate">
-                  Missing error handling for localStorage operations.
-                </p>
+      {/* Top Issues + Quick Actions + AI Summary + Apply — only after analysis */}
+      {reviewResult && (
+        <>
+          {/* Top Issues Section */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-gray-900 text-xs">Top Issues</span>
+                <span className="w-4 h-4 rounded-full bg-indigo-100 text-indigo-700 font-bold text-[9px] flex items-center justify-center">
+                  {allIssues.length || 4}
+                </span>
               </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200/80">
-                Critical
-              </span>
               <button
-                onClick={() => {
-                  const target = allIssues[0] || { id: 'err-1', title: 'Error handling not fully verified', file: prDetails?.files?.[0]?.filename || 'index.js' }
-                  setActiveFix(target)
-                }}
-                className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-lg shadow-2xs transition flex items-center gap-1 cursor-pointer"
+                onClick={() => onTabChange?.('issues')}
+                className="text-[10.5px] font-semibold text-indigo-600 hover:text-indigo-800 transition cursor-pointer flex items-center gap-0.5"
               >
-                <span>Fix This</span>
-                <span>›</span>
+                <span>View all</span>
+                <span>→</span>
               </button>
             </div>
+
+            {/* 3 prioritized issues */}
+            <div className="space-y-1.5">
+              {/* Issue 1: Error handling */}
+              <div className="p-2.5 bg-white border border-gray-200/90 rounded-xl shadow-2xs hover:border-gray-300 transition flex items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <span className="w-6 h-6 rounded-full bg-rose-500 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                    !
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-bold text-[11px] text-gray-900 truncate">
+                      {allIssues[0]?.title || 'Error handling not fully verified'}
+                    </p>
+                    <p className="text-[10px] text-gray-500 truncate">
+                      {allIssues[0]?.description || 'Missing error handling for localStorage operations.'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200/80">
+                    {allIssues[0]?.severity || 'Critical'}
+                  </span>
+                  <button
+                    onClick={() => {
+                      const target = allIssues[0] || { id: 'err-1', title: 'Error handling not fully verified', file: prDetails?.files?.[0]?.filename || 'index.js' }
+                      setActiveFix(target)
+                    }}
+                    className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-lg shadow-2xs transition flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Fix This</span>
+                    <span>›</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Issue 2: Missing tests */}
+              {(allIssues[1] || criticalCount + highCount > 1) && (
+                <div className="p-2.5 bg-white border border-gray-200/90 rounded-xl shadow-2xs hover:border-gray-300 transition flex items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <span className="w-6 h-6 rounded-full bg-orange-500 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                      !
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-bold text-[11px] text-gray-900 truncate">
+                        {allIssues[1]?.title || 'Missing tests'}
+                      </p>
+                      <p className="text-[10px] text-gray-500 truncate">
+                        {allIssues[1]?.description || 'No tests for localStorage functionality.'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-orange-50 text-orange-700 border border-orange-200/80">
+                      {allIssues[1]?.severity || 'High'}
+                    </span>
+                    <button
+                      onClick={() => onTabChange?.('tests')}
+                      className="px-3 py-1 bg-white hover:bg-gray-50 border border-gray-300 text-indigo-700 text-[10px] font-bold rounded-lg shadow-2xs transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Generate Tests</span>
+                      <span>›</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Issue 3: Performance */}
+              {(allIssues[2] || mediumCount > 0) && (
+                <div className="p-2.5 bg-white border border-gray-200/90 rounded-xl shadow-2xs hover:border-gray-300 transition flex items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <span className="w-6 h-6 rounded-full bg-amber-500 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                      !
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-bold text-[11px] text-gray-900 truncate">
+                        {allIssues[2]?.title || 'Performance regression'}
+                      </p>
+                      <p className="text-[10px] text-gray-500 truncate">
+                        {allIssues[2]?.description || 'Event delegation may cause unnecessary re-renders.'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-amber-50 text-amber-700 border border-amber-200/80">
+                      {allIssues[2]?.severity || 'Medium'}
+                    </span>
+                    <button
+                      onClick={() => setExpandedIssueIds(p => ({ ...p, 'perf-1': !p['perf-1'] }))}
+                      className="px-3 py-1 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-[10px] font-bold rounded-lg shadow-2xs transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Explain</span>
+                      <span>›</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Expanded explanation */}
+              {expandedIssueIds['perf-1'] && (
+                <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded-xl text-[10.5px] text-amber-900 space-y-1">
+                  <p className="font-semibold">Performance Impact:</p>
+                  <p>Re-binding event listeners on every state update in index.js causes unnecessary layout reflows and memory overhead.</p>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Issue 2: Missing tests */}
-          <div className="p-2.5 bg-white border border-gray-200/90 rounded-xl shadow-2xs hover:border-gray-300 transition flex items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <span className="w-6 h-6 rounded-full bg-orange-500 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
-                !
-              </span>
-              <div className="min-w-0">
-                <p className="font-bold text-[11px] text-gray-900 truncate">
-                  Missing tests
-                </p>
-                <p className="text-[10px] text-gray-500 truncate">
-                  No tests for localStorage functionality.
-                </p>
-              </div>
-            </div>
+          {/* Quick Actions (4-Card Grid) */}
+          <div className="space-y-1.5">
+            <span className="font-bold text-gray-900 text-xs">Quick Actions</span>
+            <div className="grid grid-cols-4 gap-2">
+              <button
+                onClick={() => setShowBatchModal(true)}
+                className="p-2 bg-gradient-to-br from-purple-50/80 to-white hover:from-purple-100/70 border border-purple-200 rounded-xl text-left shadow-2xs transition group cursor-pointer flex flex-col justify-between h-[64px]"
+              >
+                <div className="flex items-center justify-between text-purple-600">
+                  <span className="text-base">🏃</span>
+                  <span className="text-gray-400 group-hover:text-purple-600 transition text-xs">›</span>
+                </div>
+                <div>
+                  <p className="font-bold text-[10.5px] text-gray-900 leading-tight">Fix Issues</p>
+                  <p className="text-[9px] text-gray-500 truncate">Get AI suggestions</p>
+                </div>
+              </button>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-orange-50 text-orange-700 border border-orange-200/80">
-                High
-              </span>
               <button
                 onClick={() => onTabChange?.('tests')}
-                className="px-3 py-1 bg-white hover:bg-gray-50 border border-gray-300 text-indigo-700 text-[10px] font-bold rounded-lg shadow-2xs transition flex items-center gap-1 cursor-pointer"
+                className="p-2 bg-gradient-to-br from-teal-50/80 to-white hover:from-teal-100/70 border border-teal-200 rounded-xl text-left shadow-2xs transition group cursor-pointer flex flex-col justify-between h-[64px]"
               >
-                <span>Generate Tests</span>
-                <span>›</span>
+                <div className="flex items-center justify-between text-teal-600">
+                  <span className="text-base">🧪</span>
+                  <span className="text-gray-400 group-hover:text-teal-600 transition text-xs">›</span>
+                </div>
+                <div>
+                  <p className="font-bold text-[10.5px] text-gray-900 leading-tight">Generate Tests</p>
+                  <p className="text-[9px] text-gray-500 truncate">Create missing tests</p>
+                </div>
               </button>
-            </div>
-          </div>
 
-          {/* Issue 3: Performance */}
-          <div className="p-2.5 bg-white border border-gray-200/90 rounded-xl shadow-2xs hover:border-gray-300 transition flex items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <span className="w-6 h-6 rounded-full bg-amber-500 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
-                !
-              </span>
-              <div className="min-w-0">
-                <p className="font-bold text-[11px] text-gray-900 truncate">
-                  Performance regression
-                </p>
-                <p className="text-[10px] text-gray-500 truncate">
-                  Event delegation may cause unnecessary re-renders.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-amber-50 text-amber-700 border border-amber-200/80">
-                Medium
-              </span>
               <button
-                onClick={() => setExpandedIssueIds(p => ({ ...p, 'perf-1': !p['perf-1'] }))}
-                className="px-3 py-1 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-[10px] font-bold rounded-lg shadow-2xs transition flex items-center gap-1 cursor-pointer"
+                onClick={onRunCheck}
+                disabled={loading}
+                className="p-2 bg-gradient-to-br from-blue-50/80 to-white hover:from-blue-100/70 border border-blue-200 rounded-xl text-left shadow-2xs transition group cursor-pointer flex flex-col justify-between h-[64px]"
               >
-                <span>Explain</span>
-                <span>›</span>
+                <div className="flex items-center justify-between text-blue-600">
+                  <span className="text-base">🔄</span>
+                  <span className="text-gray-400 group-hover:text-blue-600 transition text-xs">›</span>
+                </div>
+                <div>
+                  <p className="font-bold text-[10.5px] text-gray-900 leading-tight">Re-analyze</p>
+                  <p className="text-[9px] text-gray-500 truncate">Check improvements</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => onTabChange?.('diff')}
+                className="p-2 bg-gradient-to-br from-slate-50 to-white hover:from-slate-100 border border-gray-200 rounded-xl text-left shadow-2xs transition group cursor-pointer flex flex-col justify-between h-[64px]"
+              >
+                <div className="flex items-center justify-between text-gray-700">
+                  <span className="text-base">{'</>'}</span>
+                  <span className="text-gray-400 group-hover:text-gray-900 transition text-xs">›</span>
+                </div>
+                <div>
+                  <p className="font-bold text-[10.5px] text-gray-900 leading-tight">View Diff</p>
+                  <p className="text-[9px] text-gray-500 truncate">See all changes</p>
+                </div>
               </button>
             </div>
           </div>
 
-          {/* Expanded explanation for issue 3 if clicked */}
-          {expandedIssueIds['perf-1'] && (
-            <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded-xl text-[10.5px] text-amber-900 space-y-1">
-              <p className="font-semibold">Performance Impact:</p>
-              <p>Re-binding event listeners on every state update in index.js causes unnecessary layout reflows and memory overhead.</p>
+          {/* AI Summary */}
+          <div className="p-3 bg-white border border-gray-200 rounded-xl shadow-2xs space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm">✨</span>
+                <span className="font-bold text-gray-900 text-xs">AI Summary</span>
+              </div>
+              <button
+                onClick={() => setSummaryExpanded(!summaryExpanded)}
+                className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800 transition flex items-center gap-0.5 cursor-pointer"
+              >
+                <span>{summaryExpanded ? 'Show less' : 'Read more'}</span>
+                <span>→</span>
+              </button>
             </div>
-          )}
-        </div>
-      </div>
+            <p className={`text-[11px] text-gray-600 leading-relaxed ${summaryExpanded ? '' : 'line-clamp-2'}`}>
+              {reviewResult?.summary || 'Analysis complete.'}
+            </p>
+          </div>
 
-      {/* Quick Actions (4-Card Grid) */}
-      <div className="space-y-1.5">
-        <span className="font-bold text-gray-900 text-xs">Quick Actions</span>
-        <div className="grid grid-cols-4 gap-2">
-          {/* Action 1: Fix Issues */}
+          {/* Full-width Apply All Fixes Action Button */}
           <button
             onClick={() => setShowBatchModal(true)}
-            className="p-2 bg-gradient-to-br from-purple-50/80 to-white hover:from-purple-100/70 border border-purple-150 rounded-xl text-left shadow-2xs transition group cursor-pointer flex flex-col justify-between h-[64px]"
+            className="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-xs rounded-xl shadow-md transition transform hover:scale-[1.01] flex items-center justify-between cursor-pointer"
           >
-            <div className="flex items-center justify-between text-purple-600">
-              <span className="text-base">🏃</span>
-              <span className="text-gray-400 group-hover:text-purple-600 transition text-xs">›</span>
+            <div className="flex items-center gap-2">
+              <span>✨</span>
+              <span>Apply All Fixes ({fixableIssues.length > 0 ? fixableIssues.length : allIssues.length})</span>
             </div>
-            <div>
-              <p className="font-bold text-[10.5px] text-gray-900 leading-tight">Fix Issues</p>
-              <p className="text-[9px] text-gray-500 truncate">Get AI suggestions</p>
-            </div>
+            <span className="text-xs">›</span>
           </button>
-
-          {/* Action 2: Generate Tests */}
-          <button
-            onClick={() => onTabChange?.('tests')}
-            className="p-2 bg-gradient-to-br from-teal-50/80 to-white hover:from-teal-100/70 border border-teal-150 rounded-xl text-left shadow-2xs transition group cursor-pointer flex flex-col justify-between h-[64px]"
-          >
-            <div className="flex items-center justify-between text-teal-600">
-              <span className="text-base">🧪</span>
-              <span className="text-gray-400 group-hover:text-teal-600 transition text-xs">›</span>
-            </div>
-            <div>
-              <p className="font-bold text-[10.5px] text-gray-900 leading-tight">Generate Tests</p>
-              <p className="text-[9px] text-gray-500 truncate">Create missing tests</p>
-            </div>
-          </button>
-
-          {/* Action 3: Re-analyze */}
-          <button
-            onClick={onRunCheck}
-            disabled={loading}
-            className="p-2 bg-gradient-to-br from-blue-50/80 to-white hover:from-blue-100/70 border border-blue-150 rounded-xl text-left shadow-2xs transition group cursor-pointer flex flex-col justify-between h-[64px]"
-          >
-            <div className="flex items-center justify-between text-blue-600">
-              <span className="text-base">🔄</span>
-              <span className="text-gray-400 group-hover:text-blue-600 transition text-xs">›</span>
-            </div>
-            <div>
-              <p className="font-bold text-[10.5px] text-gray-900 leading-tight">Re-analyze</p>
-              <p className="text-[9px] text-gray-500 truncate">Check improvements</p>
-            </div>
-          </button>
-
-          {/* Action 4: View Diff */}
-          <button
-            onClick={() => onTabChange?.('diff')}
-            className="p-2 bg-gradient-to-br from-slate-50 to-white hover:from-slate-100 border border-gray-200 rounded-xl text-left shadow-2xs transition group cursor-pointer flex flex-col justify-between h-[64px]"
-          >
-            <div className="flex items-center justify-between text-gray-700">
-              <span className="text-base">{'</>'}</span>
-              <span className="text-gray-400 group-hover:text-gray-900 transition text-xs">›</span>
-            </div>
-            <div>
-              <p className="font-bold text-[10.5px] text-gray-900 leading-tight">View Diff</p>
-              <p className="text-[9px] text-gray-500 truncate">See all changes</p>
-            </div>
-          </button>
-        </div>
-      </div>
-
-      {/* AI Summary */}
-      <div className="p-3 bg-white border border-gray-200 rounded-xl shadow-2xs space-y-1.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm">✨</span>
-            <span className="font-bold text-gray-900 text-xs">AI Summary</span>
-          </div>
-          <button
-            onClick={() => setSummaryExpanded(!summaryExpanded)}
-            className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800 transition flex items-center gap-0.5 cursor-pointer"
-          >
-            <span>{summaryExpanded ? 'Show less' : 'Read more'}</span>
-            <span>→</span>
-          </button>
-        </div>
-        <p className={`text-[11px] text-gray-600 leading-relaxed ${summaryExpanded ? '' : 'line-clamp-2'}`}>
-          {reviewResult?.summary || 'Adds a localStorage persistence layer for recent and bookmarked projects, introduces event-delegation changes, caps recent-project queue at 4 items,...'}
-        </p>
-      </div>
-
-      {/* Full-width Apply All Fixes Action Button */}
-      <button
-        onClick={() => setShowBatchModal(true)}
-        className="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-xs rounded-xl shadow-md transition transform hover:scale-[1.01] flex items-center justify-between cursor-pointer"
-      >
-        <div className="flex items-center gap-2">
-          <span>✨</span>
-          <span>Apply All Fixes ({fixableIssues.length > 0 ? fixableIssues.length : 2})</span>
-        </div>
-        <span className="text-xs">›</span>
-      </button>
+        </>
+      )}
 
       {/* Batch Fix Modal */}
       {showBatchModal && (
