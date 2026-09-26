@@ -132,7 +132,7 @@ export default function ContentApp() {
   }
 
   return (
-    <div className="w-[390px] bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden font-sans text-xs">
+    <div className="w-[460px] bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden font-sans text-xs">
       {/* Header */}
       <div className="flex items-center justify-between px-3.5 py-2.5 bg-gray-900 text-white">
         <div className="flex items-center gap-2 min-w-0">
@@ -216,7 +216,7 @@ export default function ContentApp() {
                 </button>
               ))}
             </div>
-            <div className="min-h-[250px] max-h-[440px] overflow-y-auto pr-1">
+            <div className="min-h-[260px] max-h-[500px] overflow-y-auto pr-1">
               {settingsTab === 'rules' && <RulesPanel repoIdentifier={prDetails?.repoIdentifier} />}
               {settingsTab === 'history' && <HistoryLogsPanel repoIdentifier={prDetails?.repoIdentifier} />}
             </div>
@@ -258,7 +258,7 @@ export default function ContentApp() {
             </div>
 
             {/* Tab Content */}
-            <div className="min-h-[280px] max-h-[460px] overflow-y-auto pr-0.5">
+            <div className="min-h-[300px] max-h-[520px] overflow-y-auto pr-0.5">
               {activeTab === 'overview' && (
                 <OverviewPanel
                   prDetails={prDetails}
