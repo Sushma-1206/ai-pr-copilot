@@ -38,11 +38,15 @@ export default function OverviewPanel({
   const passedCount = Math.max(0, (prDetails?.filesCount || 1) - (criticalCount + highCount > 0 ? 1 : 0))
 
   const fixableIssues = allIssues.filter(i => i.file && fixStatuses[i.id] !== 'applied')
+  const appliedCount = Object.values(fixStatuses).filter(v => v === 'applied').length
   const riskLevel = (reviewResult?.riskLevel || (criticalCount > 0 ? 'high' : highCount > 0 ? 'medium' : 'low')).toUpperCase()
 
   // Circular gauge parameters
   const circumference = 213.6
   const dashoffset = circumference - (score / 100) * circumference
+
+  const firstIssueId = allIssues[0]?.id || 'err-1'
+  const isFirstFixed = fixStatuses[firstIssueId] === 'applied'
 
   return (
     <div className="space-y-3.5 text-xs text-gray-800">
@@ -210,6 +214,29 @@ export default function OverviewPanel({
       {/* Top Issues + Quick Actions + AI Summary + Apply — only after analysis */}
       {reviewResult && (
         <>
+          {/* Fixes Applied Success Banner */}
+          {appliedCount > 0 && (
+            <div className="flex items-center justify-between p-2.5 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200 rounded-xl shadow-2xs">
+              <div className="flex items-center gap-2 min-w-0 pr-2">
+                <span className="text-base">🎉</span>
+                <div className="min-w-0">
+                  <p className="font-bold text-emerald-950 text-xs">
+                    {appliedCount} Fix{appliedCount > 1 ? 'es' : ''} Applied & Committed!
+                  </p>
+                  <p className="text-[10px] text-emerald-700 truncate">
+                    Readiness increased to {score}%. Changes committed to branch.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => onTabChange?.('issues')}
+                className="px-2.5 py-1 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition shrink-0 cursor-pointer shadow-2xs"
+              >
+                View Issues →
+              </button>
+            </div>
+          )}
+
           {/* Top Issues Section */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -249,16 +276,22 @@ export default function OverviewPanel({
                   <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200/80">
                     {allIssues[0]?.severity || 'Critical'}
                   </span>
-                  <button
-                    onClick={() => {
-                      const target = allIssues[0] || { id: 'err-1', title: 'Error handling not fully verified', file: prDetails?.files?.[0]?.filename || 'index.js' }
-                      setActiveFix(target)
-                    }}
-                    className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-lg shadow-2xs transition flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>Fix This</span>
-                    <span>›</span>
-                  </button>
+                  {isFirstFixed ? (
+                    <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-lg border border-emerald-200 flex items-center gap-1 shadow-2xs">
+                      <span>✓</span> Fixed
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        const target = allIssues[0] || { id: firstIssueId, title: 'Error handling not fully verified', file: prDetails?.files?.[0]?.filename || 'index.js' }
+                        setActiveFix(target)
+                      }}
+                      className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-lg shadow-2xs transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Fix This</span>
+                      <span>›</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -418,16 +451,29 @@ export default function OverviewPanel({
           </div>
 
           {/* Full-width Apply All Fixes Action Button */}
-          <button
-            onClick={() => setShowBatchModal(true)}
-            className="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-xs rounded-xl shadow-md transition transform hover:scale-[1.01] flex items-center justify-between cursor-pointer"
-          >
-            <div className="flex items-center gap-2">
-              <span>✨</span>
-              <span>Apply All Fixes ({fixableIssues.length > 0 ? fixableIssues.length : allIssues.length})</span>
-            </div>
-            <span className="text-xs">›</span>
-          </button>
+          {fixableIssues.length === 0 && appliedCount > 0 ? (
+            <button
+              disabled
+              className="w-full py-2.5 px-4 bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-xs opacity-95 flex items-center justify-between cursor-default"
+            >
+              <div className="flex items-center gap-2">
+                <span>✅</span>
+                <span>All Fixes Applied & Committed ({appliedCount})</span>
+              </div>
+              <span className="text-xs">✓</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowBatchModal(true)}
+              className="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-xs rounded-xl shadow-md transition transform hover:scale-[1.01] flex items-center justify-between cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <span>✨</span>
+                <span>Apply All Fixes ({fixableIssues.length > 0 ? fixableIssues.length : (allIssues.length || 2)})</span>
+              </div>
+              <span className="text-xs">›</span>
+            </button>
+          )}
         </>
       )}
 
@@ -435,8 +481,8 @@ export default function OverviewPanel({
       {showBatchModal && (
         <BatchFixModal
           issues={fixableIssues.length > 0 ? fixableIssues : (allIssues.length > 0 ? allIssues : [
-            { id: '1', title: 'Error handling not fully verified', file: 'index.js', severity: 'critical' },
-            { id: '2', title: 'Missing tests for persistence layer', file: 'index.js', severity: 'high' }
+            { id: 'err-1', title: 'Error handling not fully verified', file: 'index.js', severity: 'critical' },
+            { id: 'tests-1', title: 'Missing tests for persistence layer', file: 'index.js', severity: 'high' }
           ])}
           prDetails={prDetails}
           onClose={() => setShowBatchModal(false)}
