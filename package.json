@@ -11,7 +11,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@rolldown/binding-win32-x64-msvc": "^1.2.11",
     "@supabase/supabase-js": "^2.110.7",
+    "firebase": "^12.19.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },

@@ -28,7 +28,7 @@ export default defineManifest({
     type: 'module'
   },
   oauth2: {
-    client_id: '263842521415-0d8fmnm9409smbhl1uias551j7aqv54j.apps.googleusercontent.com',
+    client_id: '1067050462708-um4ecl0nap1lh3seeclervdjhkhm3gqe.apps.googleusercontent.com',
     scopes: ['openid', 'email', 'profile']
   },
   content_scripts: [
@@ -43,5 +43,10 @@ export default defineManifest({
     }
   ],
   permissions: ['storage', 'activeTab', 'identity'],
-  host_permissions: ['https://github.com/*', 'https://gitlab.com/*', 'https://*.supabase.co/*']
+  host_permissions: [
+    'https://github.com/*',
+    'https://gitlab.com/*',
+    'https://*.firebaseio.com/*',
+    'https://*.googleapis.com/*'
+  ]
 })

@@ -21,15 +21,22 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
   if (message?.type === 'AUTH_GOOGLE') {
     completeGoogleSignIn()
-      .then((session) => {
+      .then((user) => {
         sendResponse({
           success: true,
-          user: session?.user
-            ? { id: session.user.id, email: session.user.email }
+          user: user
+            ? {
+                id: user.uid || user.id,
+                uid: user.uid || user.id,
+                email: user.email,
+                displayName: user.displayName || user.email?.split('@')[0],
+                photoURL: user.photoURL
+              }
             : null
         })
       })
       .catch((error) => {
+        console.error('[background] Google sign-in failed:', error)
         sendResponse({
           success: false,
           error: error?.message || 'Google sign-in failed.'

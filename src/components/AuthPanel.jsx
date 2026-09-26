@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { isFirebaseConfigured } from '../lib/firebaseClient'
 
 export default function AuthPanel({ onAuthenticated }) {
   const { signInWithGoogle, signInWithPassword, signUp, error, loading } = useAuth()
@@ -78,6 +79,12 @@ export default function AuthPanel({ onAuthenticated }) {
       <p className="text-xs text-gray-500 mb-4">
         AI PR Copilot uses your account to store review history and project rules.
       </p>
+
+      {!isFirebaseConfigured && (
+        <div className="mb-4 p-2.5 bg-amber-50 border border-amber-200 rounded-md text-amber-800 text-[11px] leading-relaxed">
+          <strong>⚠️ Firebase keys needed:</strong> Add your Firebase configuration keys to <code className="bg-amber-100 px-1 py-0.5 rounded font-mono">.env</code> to activate authentication.
+        </div>
+      )}
 
       <button
         type="button"
