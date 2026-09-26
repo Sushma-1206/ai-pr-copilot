@@ -13,24 +13,23 @@ import RulesPanel from '../components/RulesPanel'
 import HistoryLogsPanel from '../components/HistoryLogsPanel'
 import ApiKeyModal from '../components/ApiKeyModal'
 import { extractPRDetails } from '../lib/diffExtractor'
-import { runAIReview, getAISettings } from '../lib/aiService'
+import { runAIReview } from '../lib/aiService'
 
-// Contributor navigation tabs
+// Contributor compact navigation tabs
 const CONTRIBUTOR_TABS = [
-  { key: 'overview', label: 'Overview', icon: '🚀' },
-  { key: 'issues', label: 'Issues', icon: '🔍' },
+  { key: 'overview', label: 'Overview', icon: '🏠' },
+  { key: 'issues', label: 'Issues', icon: '⚠️' },
   { key: 'tests', label: 'Tests', icon: '🧪' },
-  { key: 'ask', label: 'Ask AI', icon: '💬' },
-  { key: 'diff', label: 'Diff Preview', icon: '</>' }
+  { key: 'diff', label: 'Diff Preview', icon: '</>' },
+  { key: 'ask', label: 'Ask AI', icon: '💬' }
 ]
 
-// Reviewer navigation tabs
+// Reviewer compact navigation tabs
 const REVIEWER_TABS = [
-  { key: 'overview', label: 'Overview', icon: '🚀' },
-  { key: 'findings', label: 'Review Findings', icon: '📑' },
+  { key: 'overview', label: 'Overview', icon: '🏠' },
+  { key: 'focus', label: 'Key Focus', icon: '🎯' },
   { key: 'risk', label: 'Risk', icon: '🛡️' },
-  { key: 'ask', label: 'Ask AI', icon: '💬' },
-  { key: 'diff', label: 'Diff Preview', icon: '</>' }
+  { key: 'ask', label: 'Ask AI', icon: '💬' }
 ]
 
 export default function ContentApp() {
@@ -72,14 +71,14 @@ export default function ContentApp() {
     setFixStatuses(prev => ({ ...prev, [issueId]: 'applied' }))
   }
 
-  function handleRoleChange(newRole) {
-    setUserRole(newRole)
+  function handleRoleToggle() {
+    const nextRole = userRole === 'contributor' ? 'reviewer' : 'contributor'
+    setUserRole(nextRole)
     try {
-      localStorage.setItem('ai_pr_copilot_user_role', newRole)
+      localStorage.setItem('ai_pr_copilot_user_role', nextRole)
     } catch (e) {
       console.warn('Could not persist user role', e)
     }
-    // Switch to overview for the newly selected role
     setActiveTab('overview')
   }
 
@@ -97,7 +96,6 @@ export default function ContentApp() {
 
   // Modal
   const [showKeyModal, setShowKeyModal] = useState(false)
-  // Increment to signal token-dependent panels to re-check token
   const [tokenRefreshKey, setTokenRefreshKey] = useState(0)
 
   useEffect(() => {
@@ -118,7 +116,7 @@ export default function ContentApp() {
 
   async function handleRunDevCheck() {
     if (!prDetails) return
-    setPreviousResult(reviewResult) // keep for before/after
+    setPreviousResult(reviewResult)
     setLoading(true)
     setError(null)
     try {
@@ -142,7 +140,6 @@ export default function ContentApp() {
     try {
       const result = await runAIReview({ prDetails, mode: 'reviewer' })
       setRevReviewResult(result)
-      // Also update shared reviewResult if not yet set
       if (!reviewResult) {
         setReviewResult(result)
       }
@@ -164,24 +161,13 @@ export default function ContentApp() {
     return (
       <button
         onClick={() => setCollapsed(false)}
-        className="flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-full shadow-2xl transition transform hover:scale-105"
+        className="flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-full shadow-2xl transition transform hover:scale-105 cursor-pointer"
       >
         <span>🤖</span>
         <span>AI PR Copilot</span>
-        {prDetails?.repoIdentifier && (
+        {prDetails?.prNumber && (
           <span className="bg-indigo-800 text-indigo-100 text-[10px] px-1.5 py-0.5 rounded-full font-mono">
-            {prDetails.repoIdentifier}
-          </span>
-        )}
-        {reviewResult && (
-          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-            (reviewResult.readinessScore || 0) >= 80
-              ? 'bg-emerald-400 text-emerald-900'
-              : (reviewResult.readinessScore || 0) >= 60
-              ? 'bg-amber-400 text-amber-900'
-              : 'bg-rose-400 text-rose-900'
-          }`}>
-            {reviewResult.readinessScore}%
+            #{prDetails.prNumber}
           </span>
         )}
       </button>
@@ -191,45 +177,66 @@ export default function ContentApp() {
   const currentTabs = userRole === 'contributor' ? CONTRIBUTOR_TABS : REVIEWER_TABS
 
   return (
-    <div className="w-[470px] bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden font-sans text-xs">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3.5 py-2.5 bg-gradient-to-r from-gray-950 via-slate-900 to-indigo-950 text-white border-b border-gray-800/80 shadow-xs">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="relative flex items-center justify-center">
-            <span className="text-base shrink-0">🤖</span>
-            <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-gray-900 animate-pulse" />
+    <div className="w-[480px] bg-white border border-gray-200/90 rounded-3xl shadow-2xl overflow-hidden font-sans text-xs">
+      {/* Top Header Bar */}
+      <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-150">
+        {/* Left: Brand & Tagline */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-slate-900 to-indigo-950 flex items-center justify-center text-white text-base shadow-xs shrink-0">
+            🤖
           </div>
-          <div className="min-w-0">
-            <h2 className="text-xs font-bold tracking-tight text-white flex items-center gap-1.5">
-              <span>AI PR Copilot</span>
+          <div>
+            <h2 className="text-xs font-black tracking-tight text-gray-900 leading-tight">
+              AI PR Copilot
             </h2>
-            {prDetails?.repoIdentifier && (
-              <p className="text-[10px] text-gray-400 font-mono truncate">
-                {prDetails.repoIdentifier}{prDetails.prNumber ? ` • PR #${prDetails.prNumber}` : ''}
-              </p>
-            )}
+            <p className="text-[9.5px] text-gray-400 font-medium">
+              Smarter PRs. Faster.
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+
+        {/* Right: Role Switcher & PR Badge & Actions */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Role Switcher Dropdown Pill */}
+          <button
+            onClick={handleRoleToggle}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 transition cursor-pointer shadow-2xs"
+            title="Click to switch between Contributor and Reviewer"
+          >
+            <span>{userRole === 'contributor' ? '👤 Contributor' : '👁 Reviewer'}</span>
+            <span className="text-[8px] text-indigo-400">▾</span>
+          </button>
+
+          {/* PR Number Pill */}
+          <div className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-mono font-semibold bg-gray-50 border border-gray-200 text-gray-700">
+            <span className="opacity-80">🐙</span>
+            <span>PR #{prDetails?.prNumber || '4557'}</span>
+          </div>
+
+          {/* Settings */}
           <button
             onClick={() => setShowSettings(!showSettings)}
             className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
-              showSettings ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'
+              showSettings ? 'bg-indigo-50 text-indigo-700' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
             }`}
-            title="Settings, Rules & History"
+            title="Settings & Rules"
           >
             ⚙️
           </button>
+
+          {/* Keys */}
           <button
             onClick={() => setShowKeyModal(true)}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 text-xs transition cursor-pointer"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 text-xs transition cursor-pointer"
             title="Configure API Keys"
           >
             🔑
           </button>
+
+          {/* Close */}
           <button
             onClick={() => setCollapsed(true)}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 text-xs transition cursor-pointer font-bold"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 text-xs transition cursor-pointer font-bold"
             aria-label="Collapse panel"
           >
             ✕
@@ -238,7 +245,7 @@ export default function ContentApp() {
       </div>
 
       {/* Main Body */}
-      <div className="p-3">
+      <div className="p-3.5 space-y-3">
         {!isAuthenticated ? (
           <AuthPanel />
         ) : extracting ? (
@@ -247,7 +254,7 @@ export default function ContentApp() {
             <p className="text-xs text-gray-500">Reading pull request...</p>
           </div>
         ) : extractError ? (
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs">
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-xs">
             <p className="font-semibold mb-1">⚠️ Could Not Read PR</p>
             <p>{extractError}</p>
             <p className="mt-1 text-[10px] text-amber-600">Make sure you are on a GitHub or GitLab pull request page, then refresh.</p>
@@ -290,57 +297,18 @@ export default function ContentApp() {
         ) : (
           /* Main Workflow View */
           <div className="space-y-3">
-            {/* Top Prominent Role Toggle */}
-            <div className="space-y-1">
-              <div className="flex bg-gray-100 p-1 rounded-xl gap-1 shadow-inner">
-                <button
-                  onClick={() => handleRoleChange('contributor')}
-                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer ${
-                    userRole === 'contributor'
-                      ? 'bg-indigo-600 text-white shadow-xs scale-[1.01]'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
-                  }`}
-                >
-                  <span>👤</span>
-                  <span>Contributor</span>
-                </button>
-                <button
-                  onClick={() => handleRoleChange('reviewer')}
-                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer ${
-                    userRole === 'reviewer'
-                      ? 'bg-indigo-600 text-white shadow-xs scale-[1.01]'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
-                  }`}
-                >
-                  <span>👁</span>
-                  <span>Reviewer</span>
-                </button>
-              </div>
-
-              {/* Role Subtitle */}
-              <div className="px-1 text-center">
-                <p className="text-[10px] text-gray-500 font-medium">
-                  {userRole === 'contributor' ? (
-                    <>Focus: Fix issues, improve the PR, get it ready for review.</>
-                  ) : (
-                    <>Focus: Understand the changes, assess risks, make a review decision.</>
-                  )}
-                </p>
-              </div>
-            </div>
-
-            {/* Segmented Sub-Navigation tabs */}
-            <div className="flex bg-gray-100/90 p-1 rounded-xl gap-1 shadow-inner">
+            {/* Compact Top Navigation Tabs */}
+            <div className="flex bg-gray-100/80 p-1 rounded-xl gap-1">
               {currentTabs.map(tab => {
                 const isActive = activeTab === tab.key
                 return (
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`flex-1 py-1.5 px-0.5 rounded-lg text-[10px] font-semibold transition-all duration-150 flex items-center justify-center gap-1 cursor-pointer truncate ${
+                    className={`flex-1 py-1.5 px-1 rounded-lg text-[10.5px] font-semibold transition-all duration-150 flex items-center justify-center gap-1 cursor-pointer truncate ${
                       isActive
-                        ? 'bg-white text-indigo-700 shadow-2xs font-bold scale-[1.02]'
-                        : 'text-gray-500 hover:text-gray-800 hover:bg-white/40'
+                        ? 'bg-indigo-600 text-white shadow-2xs font-bold'
+                        : 'text-gray-500 hover:text-gray-800 hover:bg-white/60'
                     }`}
                   >
                     <span className="text-xs shrink-0">{tab.icon}</span>
@@ -351,7 +319,7 @@ export default function ContentApp() {
             </div>
 
             {/* Tab Panels */}
-            <div className="min-h-[320px] max-h-[530px] overflow-y-auto pr-0.5">
+            <div className="min-h-[320px] max-h-[540px] overflow-y-auto pr-0.5">
               {/* Contributor Mode Tabs */}
               {userRole === 'contributor' && (
                 <>
@@ -388,6 +356,10 @@ export default function ContentApp() {
                     />
                   )}
 
+                  {activeTab === 'diff' && (
+                    <DiffPreviewPanel prDetails={prDetails} />
+                  )}
+
                   {activeTab === 'ask' && (
                     <AskAIPanel
                       prDetails={prDetails}
@@ -396,10 +368,6 @@ export default function ContentApp() {
                       initialPrompt={pendingAskPrompt}
                       onClearInitialPrompt={() => setPendingAskPrompt(null)}
                     />
-                  )}
-
-                  {activeTab === 'diff' && (
-                    <DiffPreviewPanel prDetails={prDetails} />
                   )}
                 </>
               )}
@@ -423,7 +391,7 @@ export default function ContentApp() {
                     />
                   )}
 
-                  {activeTab === 'findings' && (
+                  {activeTab === 'focus' && (
                     <ReviewerPanel
                       prDetails={prDetails}
                       onRunCheck={handleRunRevCheck}
@@ -432,9 +400,7 @@ export default function ContentApp() {
                       error={revError}
                       onOpenApiKeyModal={() => setShowKeyModal(true)}
                       tokenRefreshKey={tokenRefreshKey}
-                      onReAnalyze={() => {
-                        handleRunDevCheck()
-                      }}
+                      onReAnalyze={handleRunDevCheck}
                     />
                   )}
 
@@ -446,6 +412,10 @@ export default function ContentApp() {
                     />
                   )}
 
+                  {activeTab === 'diff' && (
+                    <DiffPreviewPanel prDetails={prDetails} />
+                  )}
+
                   {activeTab === 'ask' && (
                     <AskAIPanel
                       prDetails={prDetails}
@@ -454,10 +424,6 @@ export default function ContentApp() {
                       initialPrompt={pendingAskPrompt}
                       onClearInitialPrompt={() => setPendingAskPrompt(null)}
                     />
-                  )}
-
-                  {activeTab === 'diff' && (
-                    <DiffPreviewPanel prDetails={prDetails} />
                   )}
                 </>
               )}
