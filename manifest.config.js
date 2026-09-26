@@ -43,5 +43,14 @@ export default defineManifest({
     }
   ],
   permissions: ['storage', 'activeTab', 'identity'],
-  host_permissions: ['https://github.com/*', 'https://gitlab.com/*', 'https://*.supabase.co/*']
+  host_permissions: [
+    'https://github.com/*',
+    'https://api.github.com/*',
+    'https://*.github.com/*',
+    'https://patch-diff.githubusercontent.com/*',
+    'https://*.githubusercontent.com/*',
+    'https://gitlab.com/*',
+    'https://*.supabase.co/*',
+    'https://api.groq.com/*'
+  ]
 })

@@ -38,5 +38,32 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true
   }
 
+  if (message?.type === 'FETCH_PR_DIFF') {
+    const { url, headers } = message
+    fetch(url, {
+      headers: headers || {},
+      credentials: 'omit'
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          sendResponse({
+            success: false,
+            status: res.status,
+            statusText: res.statusText
+          })
+          return
+        }
+        const text = await res.text()
+        sendResponse({ success: true, text })
+      })
+      .catch((err) => {
+        sendResponse({
+          success: false,
+          error: err?.message || 'Diff fetch failed in background.'
+        })
+      })
+    return true
+  }
+
   return false
 })
