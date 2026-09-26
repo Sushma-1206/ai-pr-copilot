@@ -46,8 +46,32 @@ export default function OverviewPanel({
 
   return (
     <div className="space-y-3.5 text-xs text-gray-800">
+      {/* Pre-Flight Check Header with Analyze / Re-analyze button */}
+      <div className="flex items-center justify-between p-2.5 bg-gradient-to-r from-indigo-50/90 via-purple-50/50 to-blue-50/90 border border-indigo-100 rounded-xl shadow-2xs">
+        <div>
+          <h3 className="font-bold text-gray-900 text-xs flex items-center gap-1.5">
+            <span>🚀</span> Pre-Flight Check
+          </h3>
+          <p className="text-[10px] text-gray-500 mt-0.5">
+            {prDetails?.filesCount ? `${prDetails.filesCount} file(s) changed` : 'Reading PR...'}
+          </p>
+        </div>
+        <button
+          onClick={onRunCheck}
+          disabled={loading}
+          className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-2xs transition flex items-center gap-1.5 cursor-pointer shrink-0"
+        >
+          {loading ? (
+            <><span className="animate-spin text-xs">🌀</span><span>Analyzing...</span></>
+          ) : (
+            <><span>🔄</span><span>{reviewResult ? 'Re-analyze' : 'Analyze PR'}</span></>
+          )}
+        </button>
+      </div>
+
       {/* Errors */}
       {error === 'API_KEY_MISSING' && (
+
         <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 space-y-2">
           <p className="font-semibold text-xs">⚠️ Groq API Key Required</p>
           <p className="text-[11px] text-amber-700">Enter your Groq API key to enable AI-powered analysis.</p>
