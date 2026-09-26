@@ -36,6 +36,16 @@ export default function IssuesPanel({
 
   const allIssues = reviewResult?.issues || []
   const fixableIssues = allIssues.filter(i => i.file && fixStatuses[i.id] !== 'applied')
+  const appliedIssues = allIssues.filter(i => fixStatuses[i.id] === 'applied')
+
+  const FILTERS = [
+    { key: 'all', label: `All (${allIssues.length})` },
+    { key: 'critical', label: '🔴 Critical' },
+    { key: 'high', label: '🟠 High' },
+    { key: 'security', label: '🔒 Security' },
+    { key: 'tests', label: '🧪 Tests' },
+    { key: 'resolved', label: `✅ Resolved (${appliedIssues.length})` }
+  ]
 
   const filtered = allIssues
     .filter(issue => {
@@ -60,6 +70,29 @@ export default function IssuesPanel({
 
   return (
     <div className="space-y-3 text-xs text-gray-800">
+      {/* Fixes Applied Success Banner */}
+      {appliedIssues.length > 0 && (
+        <div className="flex items-center justify-between p-2.5 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200 rounded-xl shadow-2xs">
+          <div className="flex items-center gap-2 min-w-0 pr-2">
+            <span className="text-lg">🎉</span>
+            <div className="min-w-0">
+              <p className="font-bold text-emerald-950 text-xs">
+                {appliedIssues.length} of {allIssues.length} Fixes Applied & Committed!
+              </p>
+              <p className="text-[10.5px] text-emerald-700 truncate">
+                Changes are committed to the PR branch. View under <span className="font-semibold">✅ Resolved</span>.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setFilter('resolved')}
+            className="px-2.5 py-1 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition shrink-0 cursor-pointer shadow-2xs"
+          >
+            Filter Resolved →
+          </button>
+        </div>
+      )}
+
       {/* Batch Accept Suggestions Banner */}
       {fixableIssues.length > 0 && (
         <div className="flex items-center justify-between p-2.5 bg-gradient-to-r from-indigo-50/90 via-purple-50/60 to-blue-50/90 border border-indigo-100 rounded-xl shadow-2xs">
