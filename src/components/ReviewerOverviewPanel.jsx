@@ -128,13 +128,13 @@ export default function ReviewerOverviewPanel({
         {/* Files Changed */}
         <div
           onClick={() => onTabChange?.('diff')}
-          className="p-2.5 bg-white hover:bg-gray-50/80 border border-gray-200 rounded-xl shadow-2xs transition cursor-pointer flex flex-col justify-between"
+          className="p-2.5 bg-gradient-to-br from-blue-50/90 via-indigo-50/40 to-white hover:from-blue-100/90 border border-blue-200 rounded-xl shadow-2xs transition cursor-pointer flex flex-col justify-between"
         >
-          <div className="flex items-center gap-1.5 text-gray-700">
-            <span className="text-sm">📄</span>
+          <div className="flex items-center gap-1.5 text-blue-800">
+            <span className="w-5 h-5 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center text-xs">📄</span>
             <span className="text-[10.5px] font-bold">Files Changed</span>
           </div>
-          <p className="text-base font-black text-gray-900 my-0.5">
+          <p className="text-base font-black text-blue-950 my-0.5">
             {prDetails?.filesCount || 1}
           </p>
         </div>
@@ -142,45 +142,45 @@ export default function ReviewerOverviewPanel({
         {/* Issues Found */}
         <div
           onClick={() => onTabChange?.('focus')}
-          className="p-2.5 bg-white hover:bg-gray-50/80 border border-gray-200 rounded-xl shadow-2xs transition cursor-pointer flex flex-col justify-between"
+          className="p-2.5 bg-gradient-to-br from-rose-50/90 via-orange-50/40 to-white hover:from-rose-100/90 border border-rose-200 rounded-xl shadow-2xs transition cursor-pointer flex flex-col justify-between"
         >
-          <div className="flex items-center gap-1.5 text-rose-600">
-            <span className="text-sm">⚠️</span>
-            <span className="text-[10.5px] font-bold text-gray-700">Issues Found</span>
+          <div className="flex items-center gap-1.5 text-rose-800">
+            <span className="w-5 h-5 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center text-xs">⚠️</span>
+            <span className="text-[10.5px] font-bold">Issues Found</span>
           </div>
-          <p className="text-base font-black text-gray-900 my-0.5">
+          <p className="text-base font-black text-rose-950 my-0.5">
             {allIssues.length || 4}
           </p>
         </div>
 
         {/* Est. Review Time */}
-        <div className="p-2.5 bg-white border border-gray-200 rounded-xl shadow-2xs flex flex-col justify-between">
-          <div className="flex items-center gap-1.5 text-blue-600">
-            <span className="text-sm">⏱</span>
-            <span className="text-[10.5px] font-bold text-gray-700">Est. Review Time</span>
+        <div className="p-2.5 bg-gradient-to-br from-purple-50/90 via-indigo-50/40 to-white border border-purple-200 rounded-xl shadow-2xs flex flex-col justify-between">
+          <div className="flex items-center gap-1.5 text-purple-800">
+            <span className="w-5 h-5 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center text-xs">⏱</span>
+            <span className="text-[10.5px] font-bold">Est. Review Time</span>
           </div>
-          <p className="text-base font-black text-gray-900 my-0.5">
+          <p className="text-base font-black text-purple-950 my-0.5">
             {estReviewTime} min
           </p>
         </div>
       </div>
 
       {/* PR Summary Card */}
-      <div className="p-3 bg-white border border-gray-200 rounded-xl shadow-2xs space-y-1.5">
+      <div className="p-3 bg-gradient-to-br from-indigo-50/80 via-purple-50/30 to-blue-50/60 border border-indigo-200/90 rounded-xl shadow-2xs space-y-1.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <span className="text-sm">📄</span>
-            <span className="font-bold text-gray-900 text-xs">PR Summary</span>
+            <span className="w-5 h-5 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs">📄</span>
+            <span className="font-bold text-indigo-950 text-xs">PR Summary</span>
           </div>
           <button
             onClick={() => onTabChange?.('diff')}
-            className="text-[10.5px] font-semibold text-indigo-600 hover:text-indigo-800 transition flex items-center gap-0.5 cursor-pointer"
+            className="text-[10.5px] font-bold text-indigo-700 hover:text-indigo-900 bg-white/90 hover:bg-white px-2.5 py-0.5 rounded-lg border border-indigo-200 shadow-2xs transition flex items-center gap-0.5 cursor-pointer"
           >
             <span>View Diff</span>
             <span>→</span>
           </button>
         </div>
-        <p className="text-[11px] text-gray-600 leading-relaxed line-clamp-2">
+        <p className="text-[11px] text-gray-700 leading-relaxed line-clamp-2">
           {reviewResult?.summary || reviewResult?.overview || 'Adds localStorage persistence layer for recent and bookmarked projects, introduces event-delegation changes, caps recent-project queue at 4 items,...'}
         </p>
       </div>
@@ -188,14 +188,14 @@ export default function ReviewerOverviewPanel({
       {/* Risk Breakdown & Key Focus Areas (2-Column Grid) */}
       <div className="grid grid-cols-2 gap-2">
         {/* Left: Risk Breakdown Donut */}
-        <div className="p-3 bg-white border border-gray-200 rounded-xl shadow-2xs space-y-2">
-          <span className="font-bold text-gray-900 text-xs block">Risk Breakdown</span>
+        <div className="p-3 bg-gradient-to-br from-rose-50/80 via-orange-50/30 to-amber-50/40 border border-rose-200 rounded-xl shadow-2xs space-y-2">
+          <span className="font-bold text-rose-950 text-xs block">🛡️ Risk Breakdown</span>
           
           <div className="flex items-center justify-between gap-2 pt-1">
             {/* Donut ring */}
             <div className="relative w-16 h-16 shrink-0 flex items-center justify-center">
               <svg width={64} height={64} className="transform -rotate-90">
-                <circle cx={32} cy={32} r={26} stroke="#f1f5f9" strokeWidth={6} fill="transparent" />
+                <circle cx={32} cy={32} r={26} stroke="#ffe4e6" strokeWidth={6} fill="transparent" />
                 <circle
                   cx={32}
                   cy={32}
@@ -209,88 +209,88 @@ export default function ReviewerOverviewPanel({
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <span className="text-xs font-black text-rose-600">
+                <span className="text-xs font-black text-rose-700">
                   {riskLevel === 'LOW' ? 'Low' : riskLevel === 'MEDIUM' ? 'Med' : 'High'}
                 </span>
               </div>
             </div>
 
-            {/* Legend counts */}
-            <div className="space-y-1 text-[10px]">
-              <div className="flex items-center justify-between gap-3 text-gray-600">
-                <div className="flex items-center gap-1">
+            {/* Legend counts with colorful pill backgrounds */}
+            <div className="space-y-1 text-[10px] flex-1">
+              <div className="flex items-center justify-between gap-2 px-1.5 py-0.5 bg-rose-100/70 border border-rose-200/70 rounded-md text-rose-900">
+                <div className="flex items-center gap-1 font-semibold">
                   <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                   <span>Critical</span>
                 </div>
-                <span className="font-bold text-gray-900">{criticalCount}</span>
+                <span className="font-extrabold text-rose-950">{criticalCount}</span>
               </div>
 
-              <div className="flex items-center justify-between gap-3 text-gray-600">
-                <div className="flex items-center gap-1">
+              <div className="flex items-center justify-between gap-2 px-1.5 py-0.5 bg-orange-100/70 border border-orange-200/70 rounded-md text-orange-900">
+                <div className="flex items-center gap-1 font-semibold">
                   <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
                   <span>High</span>
                 </div>
-                <span className="font-bold text-gray-900">{highCount}</span>
+                <span className="font-extrabold text-orange-950">{highCount}</span>
               </div>
 
-              <div className="flex items-center justify-between gap-3 text-gray-600">
-                <div className="flex items-center gap-1">
+              <div className="flex items-center justify-between gap-2 px-1.5 py-0.5 bg-amber-100/70 border border-amber-200/70 rounded-md text-amber-900">
+                <div className="flex items-center gap-1 font-semibold">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                   <span>Medium</span>
                 </div>
-                <span className="font-bold text-gray-900">{mediumCount}</span>
+                <span className="font-extrabold text-amber-950">{mediumCount}</span>
               </div>
 
-              <div className="flex items-center justify-between gap-3 text-gray-600">
-                <div className="flex items-center gap-1">
+              <div className="flex items-center justify-between gap-2 px-1.5 py-0.5 bg-emerald-100/70 border border-emerald-200/70 rounded-md text-emerald-900">
+                <div className="flex items-center gap-1 font-semibold">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   <span>Passed</span>
                 </div>
-                <span className="font-bold text-gray-900">{passedCount}</span>
+                <span className="font-extrabold text-emerald-950">{passedCount}</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Right: Key Focus Areas */}
-        <div className="p-3 bg-white border border-gray-200 rounded-xl shadow-2xs space-y-1.5">
+        <div className="p-3 bg-gradient-to-br from-purple-50/80 via-indigo-50/40 to-slate-50 border border-purple-200 rounded-xl shadow-2xs space-y-1.5">
           <div className="flex items-center gap-1.5">
             <span className="text-sm">🎯</span>
-            <span className="font-bold text-gray-900 text-xs">Key Focus Areas</span>
+            <span className="font-bold text-purple-950 text-xs">Key Focus Areas</span>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <div
               onClick={() => onTabChange?.('focus')}
-              className="p-1.5 bg-gray-50/70 hover:bg-gray-100 rounded-lg flex items-center justify-between text-[10.5px] cursor-pointer transition"
+              className="p-1.5 bg-rose-50/90 hover:bg-rose-100 border border-rose-200 rounded-lg flex items-center justify-between text-[10.5px] cursor-pointer transition shadow-2xs"
             >
               <div className="flex items-center gap-1.5 truncate">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-                <span className="text-gray-800 font-medium truncate">Error handling</span>
+                <span className="text-rose-950 font-bold truncate">Error handling</span>
               </div>
-              <span className="text-gray-400 text-xs">›</span>
+              <span className="text-rose-400 text-xs font-bold">›</span>
             </div>
 
             <div
               onClick={() => onTabChange?.('focus')}
-              className="p-1.5 bg-gray-50/70 hover:bg-gray-100 rounded-lg flex items-center justify-between text-[10.5px] cursor-pointer transition"
+              className="p-1.5 bg-orange-50/90 hover:bg-orange-100 border border-orange-200 rounded-lg flex items-center justify-between text-[10.5px] cursor-pointer transition shadow-2xs"
             >
               <div className="flex items-center gap-1.5 truncate">
                 <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />
-                <span className="text-gray-800 font-medium truncate">Missing tests</span>
+                <span className="text-orange-950 font-bold truncate">Missing tests</span>
               </div>
-              <span className="text-gray-400 text-xs">›</span>
+              <span className="text-orange-400 text-xs font-bold">›</span>
             </div>
 
             <div
               onClick={() => onTabChange?.('focus')}
-              className="p-1.5 bg-gray-50/70 hover:bg-gray-100 rounded-lg flex items-center justify-between text-[10.5px] cursor-pointer transition"
+              className="p-1.5 bg-amber-50/90 hover:bg-amber-100 border border-amber-200 rounded-lg flex items-center justify-between text-[10.5px] cursor-pointer transition shadow-2xs"
             >
               <div className="flex items-center gap-1.5 truncate">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                <span className="text-gray-800 font-medium truncate">Performance</span>
+                <span className="text-amber-950 font-bold truncate">Performance</span>
               </div>
-              <span className="text-gray-400 text-xs">›</span>
+              <span className="text-amber-400 text-xs font-bold">›</span>
             </div>
           </div>
         </div>
@@ -299,58 +299,58 @@ export default function ReviewerOverviewPanel({
       {/* 4 Status Cards (4-Grid) */}
       <div className="grid grid-cols-4 gap-1.5">
         {/* Security */}
-        <div className="p-2 bg-white border border-gray-200 rounded-xl shadow-2xs space-y-1">
-          <div className="flex items-center gap-1 text-[10px] font-bold text-gray-800">
+        <div className="p-2 bg-gradient-to-br from-emerald-100/90 via-teal-50 to-emerald-50/50 border border-emerald-300 rounded-xl shadow-2xs space-y-1">
+          <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-950">
             <span>🛡️</span>
             <span>Security</span>
           </div>
-          <p className="text-[9px] text-emerald-700 font-semibold flex items-center gap-0.5">
+          <p className="text-[9px] text-emerald-800 font-bold flex items-center gap-0.5">
             <span>✓</span> No critical issues
           </p>
         </div>
 
         {/* Testing */}
-        <div className="p-2 bg-white border border-gray-200 rounded-xl shadow-2xs space-y-1">
-          <div className="flex items-center gap-1 text-[10px] font-bold text-gray-800">
+        <div className="p-2 bg-gradient-to-br from-amber-100/90 via-orange-50 to-amber-50/50 border border-amber-300 rounded-xl shadow-2xs space-y-1">
+          <div className="flex items-center gap-1 text-[10px] font-bold text-amber-950">
             <span>🧪</span>
             <span>Testing</span>
           </div>
-          <p className="text-[9px] text-amber-700 font-semibold flex items-center gap-0.5">
+          <p className="text-[9px] text-amber-900 font-bold flex items-center gap-0.5">
             <span>⚠️</span> Insufficient tests
           </p>
         </div>
 
         {/* Breaking Changes */}
-        <div className="p-2 bg-white border border-gray-200 rounded-xl shadow-2xs space-y-1">
-          <div className="flex items-center gap-1 text-[10px] font-bold text-gray-800">
+        <div className="p-2 bg-gradient-to-br from-sky-100/90 via-cyan-50 to-blue-50/50 border border-sky-300 rounded-xl shadow-2xs space-y-1">
+          <div className="flex items-center gap-1 text-[10px] font-bold text-sky-950">
             <span>⚡</span>
             <span>Breaking</span>
           </div>
-          <p className="text-[9px] text-emerald-700 font-semibold flex items-center gap-0.5">
+          <p className="text-[9px] text-sky-800 font-bold flex items-center gap-0.5">
             <span>✓</span> None detected
           </p>
         </div>
 
         {/* Code Quality */}
-        <div className="p-2 bg-white border border-gray-200 rounded-xl shadow-2xs space-y-1">
-          <div className="flex items-center gap-1 text-[10px] font-bold text-gray-800">
+        <div className="p-2 bg-gradient-to-br from-purple-100/90 via-indigo-50 to-violet-50/50 border border-purple-300 rounded-xl shadow-2xs space-y-1">
+          <div className="flex items-center gap-1 text-[10px] font-bold text-purple-950">
             <span>{'</>'}</span>
             <span>Code Quality</span>
           </div>
-          <p className="text-[9px] text-emerald-700 font-semibold flex items-center gap-0.5">
+          <p className="text-[9px] text-purple-800 font-bold flex items-center gap-0.5">
             <span>✓</span> Looks good
           </p>
         </div>
       </div>
 
       {/* Ask AI Section */}
-      <div className="p-3 bg-white border border-gray-200 rounded-xl shadow-2xs space-y-2">
+      <div className="p-3 bg-gradient-to-br from-indigo-100/80 via-purple-50/60 to-pink-50/40 border border-indigo-200 rounded-xl shadow-2xs space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <span className="text-sm">💬</span>
-            <span className="font-bold text-gray-900 text-xs">Ask AI</span>
+            <span className="font-bold text-indigo-950 text-xs">Ask AI</span>
           </div>
-          <span className="text-gray-400 text-xs">›</span>
+          <span className="text-indigo-400 text-xs font-bold">›</span>
         </div>
 
         <div className="flex flex-wrap gap-1.5">
@@ -362,7 +362,7 @@ export default function ReviewerOverviewPanel({
             <button
               key={prompt}
               onClick={() => onAskPrompt?.(prompt)}
-              className="px-2.5 py-1 bg-indigo-50/70 hover:bg-indigo-100/80 border border-indigo-200/70 text-indigo-900 rounded-lg text-[10px] font-medium transition cursor-pointer"
+              className="px-2.5 py-1.5 bg-white/95 hover:bg-white border border-indigo-200 hover:border-indigo-400 text-indigo-950 rounded-lg text-[10px] font-bold shadow-2xs hover:shadow-xs transition cursor-pointer"
             >
               {prompt}
             </button>
@@ -371,16 +371,16 @@ export default function ReviewerOverviewPanel({
       </div>
 
       {/* Bottom Review Actions */}
-      <div className="p-2.5 bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-slate-50 border border-blue-150 rounded-xl shadow-2xs flex items-center justify-between gap-2">
+      <div className="p-2.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 text-white border border-indigo-900/70 rounded-xl shadow-md flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+          <span className="w-5 h-5 rounded-full bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 font-bold text-xs flex items-center justify-center shrink-0">
             ℹ
           </span>
           <div className="min-w-0">
-            <p className="font-bold text-[10.5px] text-gray-900 truncate">
+            <p className="font-bold text-[10.5px] text-white truncate">
               Human review still required
             </p>
-            <p className="text-[9px] text-gray-500 truncate">
+            <p className="text-[9px] text-indigo-200 truncate">
               AI analysis helps you review faster, but the final decision is yours.
             </p>
           </div>
@@ -389,19 +389,19 @@ export default function ReviewerOverviewPanel({
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={() => handleOpenReviewModal('COMMENT')}
-            className="px-2.5 py-1.5 bg-white hover:bg-gray-100 border border-gray-300 text-gray-700 text-[10px] font-bold rounded-lg transition shadow-2xs cursor-pointer"
+            className="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-[10px] font-bold rounded-lg transition shadow-2xs cursor-pointer"
           >
             💬 Comment
           </button>
           <button
             onClick={() => handleOpenReviewModal('APPROVE')}
-            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold rounded-lg transition shadow-2xs cursor-pointer"
+            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold rounded-lg transition shadow-sm cursor-pointer"
           >
             ✓ Approve
           </button>
           <button
             onClick={() => handleOpenReviewModal('REQUEST_CHANGES')}
-            className="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold rounded-lg transition shadow-2xs cursor-pointer"
+            className="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold rounded-lg transition shadow-sm cursor-pointer"
           >
             🔄 Request Changes
           </button>
