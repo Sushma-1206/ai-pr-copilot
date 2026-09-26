@@ -42,6 +42,25 @@ export default function ContentApp() {
   const [error, setError] = useState(null)
   const [revError, setRevError] = useState(null)
 
+  // Fixes state across panels
+  const [fixStatuses, setFixStatuses] = useState({})
+
+  function handleFixStatusChange(issueId) {
+    setFixStatuses(prev => ({ ...prev, [issueId]: 'applied' }))
+  }
+
+  // Dynamically compute improved readiness score as issues are resolved
+  const totalIssuesCount = (reviewResult?.issues || []).length
+  const appliedCount = Object.values(fixStatuses).filter(v => v === 'applied').length
+  const computedScore = reviewResult?.readinessScore != null
+    ? Math.min(100, Math.round(reviewResult.readinessScore + (totalIssuesCount > 0 ? (appliedCount / totalIssuesCount) * (100 - reviewResult.readinessScore) : 0)))
+    : null
+
+  const effectiveReviewResult = reviewResult ? {
+    ...reviewResult,
+    readinessScore: computedScore ?? reviewResult.readinessScore
+  } : null
+
   // Modal
   const [showKeyModal, setShowKeyModal] = useState(false)
   // Increment to signal token-dependent panels to re-check token
@@ -274,19 +293,23 @@ export default function ContentApp() {
                   prDetails={prDetails}
                   onRunCheck={handleRunDevCheck}
                   loading={loading}
-                  reviewResult={reviewResult}
+                  reviewResult={effectiveReviewResult}
                   previousResult={previousResult}
                   error={error}
                   onOpenApiKeyModal={() => setShowKeyModal(true)}
                   onTabChange={setActiveTab}
+                  fixStatuses={fixStatuses}
+                  onFixStatusChange={handleFixStatusChange}
                 />
               )}
 
               {activeTab === 'issues' && (
                 <IssuesPanel
                   prDetails={prDetails}
-                  reviewResult={reviewResult}
+                  reviewResult={effectiveReviewResult}
                   onOpenApiKeyModal={() => setShowKeyModal(true)}
+                  fixStatuses={fixStatuses}
+                  onFixStatusChange={handleFixStatusChange}
                 />
               )}
 

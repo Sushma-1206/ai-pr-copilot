@@ -97,22 +97,33 @@ export default function IssueCard({ issue, onFixThis, onExplain, fixStatus }) {
           )}
 
           {/* Actions */}
-          <div className="flex items-center gap-1.5 pt-1">
+          <div className="flex items-center gap-1.5 pt-1 flex-wrap">
             {onExplain && (
               <button
                 onClick={() => onExplain(issue)}
-                className="px-2 py-1 text-[10px] font-medium bg-white border border-gray-200 rounded hover:bg-gray-50 transition text-gray-700"
+                className="px-2 py-1 text-[10px] font-medium bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition text-gray-700 cursor-pointer"
               >
                 💡 Explain
               </button>
             )}
             {onFixThis && fixStatus !== 'applied' && (
-              <button
-                onClick={() => onFixThis(issue)}
-                className="px-2 py-1 text-[10px] font-medium bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
-              >
-                🔧 Fix This
-              </button>
+              <>
+                <button
+                  onClick={() => onFixThis(issue, 'cross-file')}
+                  className="px-2.5 py-1 text-[10px] font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md hover:from-indigo-700 hover:to-purple-700 transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                  title="Analyzes repository context & dependent files to propose coordinated multi-file changes"
+                >
+                  <span>🔗</span>
+                  <span>Codebase-Aware Fix</span>
+                </button>
+                <button
+                  onClick={() => onFixThis(issue, 'localized')}
+                  className="px-2 py-1 text-[10px] font-medium bg-white border border-indigo-200 text-indigo-700 rounded-md hover:bg-indigo-50 transition cursor-pointer"
+                  title="Targeted single-line fix"
+                >
+                  <span>🎯 Local Fix</span>
+                </button>
+              </>
             )}
           </div>
         </div>

@@ -98,7 +98,12 @@ export async function applyFixesAndCommit({
 
     // Replace originalCode with fixedCode
     let updatedContent = rawContent
-    if (fix.originalCode && rawContent.includes(fix.originalCode.trim())) {
+    const normRaw = rawContent.replace(/\r\n/g, '\n')
+    const normOrig = fix.originalCode ? fix.originalCode.trim().replace(/\r\n/g, '\n') : ''
+    
+    if (normOrig && normRaw.includes(normOrig)) {
+      updatedContent = normRaw.replace(normOrig, fix.fixedCode.trim())
+    } else if (fix.originalCode && rawContent.includes(fix.originalCode.trim())) {
       updatedContent = rawContent.replace(fix.originalCode.trim(), fix.fixedCode.trim())
     } else {
       // If exact original snippet is not matched, append or patch

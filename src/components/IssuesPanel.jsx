@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import IssueCard from './IssueCard'
 import FixConfirmation from './FixConfirmation'
+import BatchFixModal from './BatchFixModal'
 
 const SEVERITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 }
 const FILTERS = [
@@ -12,12 +13,29 @@ const FILTERS = [
   { key: 'resolved', label: '✅ Resolved' }
 ]
 
-export default function IssuesPanel({ prDetails, reviewResult, onOpenApiKeyModal }) {
+export default function IssuesPanel({
+  prDetails,
+  reviewResult,
+  onOpenApiKeyModal,
+  fixStatuses: externalFixStatuses,
+  onFixStatusChange
+}) {
   const [filter, setFilter] = useState('all')
   const [activeFix, setActiveFix] = useState(null)
-  const [fixStatuses, setFixStatuses] = useState({})
+  const [showBatchModal, setShowBatchModal] = useState(false)
+  const [internalFixStatuses, setInternalFixStatuses] = useState({})
+
+  const fixStatuses = externalFixStatuses || internalFixStatuses
+  const updateFixStatus = (id) => {
+    if (onFixStatusChange) {
+      onFixStatusChange(id)
+    } else {
+      setInternalFixStatuses(prev => ({ ...prev, [id]: 'applied' }))
+    }
+  }
 
   const allIssues = reviewResult?.issues || []
+  const fixableIssues = allIssues.filter(i => i.file && fixStatuses[i.id] !== 'applied')
 
   const filtered = allIssues
     .filter(issue => {
@@ -42,15 +60,36 @@ export default function IssuesPanel({ prDetails, reviewResult, onOpenApiKeyModal
 
   return (
     <div className="space-y-3 text-xs text-gray-800">
+      {/* Batch Accept Suggestions Banner */}
+      {fixableIssues.length > 0 && (
+        <div className="flex items-center justify-between p-2.5 bg-gradient-to-r from-indigo-50/90 via-purple-50/60 to-blue-50/90 border border-indigo-100 rounded-xl shadow-2xs">
+          <div className="min-w-0 pr-2">
+            <div className="flex items-center gap-1.5 font-bold text-gray-900 text-xs">
+              <span className="text-sm">⚡</span>
+              <span>Batch Accept Suggestions</span>
+            </div>
+            <p className="text-[10px] text-gray-600 mt-0.5 truncate">
+              Accept {fixableIssues.length} Copilot suggestions together in one action instead of reviewing individually.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowBatchModal(true)}
+            className="px-3 py-1.5 bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 hover:from-indigo-700 hover:to-purple-800 text-white font-bold text-xs rounded-lg shadow-sm hover:shadow transition shrink-0 cursor-pointer flex items-center gap-1.5"
+          >
+            <span>⚡ Accept All ({fixableIssues.length})</span>
+          </button>
+        </div>
+      )}
+
       {/* Filter tabs */}
       <div className="flex gap-1 flex-wrap">
         {FILTERS.map(f => (
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
-            className={`px-2 py-0.5 rounded-full text-[10px] font-medium border transition ${
+            className={`px-2 py-0.5 rounded-full text-[10px] font-medium border transition cursor-pointer ${
               filter === f.key
-                ? 'bg-indigo-600 border-indigo-600 text-white'
+                ? 'bg-indigo-600 border-indigo-600 text-white font-semibold'
                 : 'bg-white border-gray-200 text-gray-600 hover:border-indigo-400'
             }`}
           >
@@ -60,9 +99,12 @@ export default function IssuesPanel({ prDetails, reviewResult, onOpenApiKeyModal
       </div>
 
       {/* Count */}
-      <p className="text-[10px] text-gray-400">
-        Showing {filtered.length} of {allIssues.length} issues
-      </p>
+      <div className="flex items-center justify-between text-[10px] text-gray-400">
+        <span>Showing {filtered.length} of {allIssues.length} issues</span>
+        {fixableIssues.length > 0 && (
+          <span className="text-indigo-600 font-semibold">{fixableIssues.length} fixable issues remaining</span>
+        )}
+      </div>
 
       {/* Issue List */}
       {filtered.length === 0 ? (
@@ -151,8 +193,22 @@ export default function IssuesPanel({ prDetails, reviewResult, onOpenApiKeyModal
           prDetails={prDetails}
           onClose={() => setActiveFix(null)}
           onApplied={(id) => {
-            setFixStatuses(prev => ({ ...prev, [id]: 'applied' }))
+            updateFixStatus(id)
             setActiveFix(null)
+          }}
+          onOpenApiKeyModal={onOpenApiKeyModal}
+        />
+      )}
+
+      {/* Batch Fix Modal */}
+      {showBatchModal && (
+        <BatchFixModal
+          issues={fixableIssues}
+          prDetails={prDetails}
+          onClose={() => setShowBatchModal(false)}
+          onBatchApplied={(appliedIds) => {
+            appliedIds.forEach(id => updateFixStatus(id))
+            setShowBatchModal(false)
           }}
           onOpenApiKeyModal={onOpenApiKeyModal}
         />

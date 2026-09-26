@@ -14,15 +14,26 @@ export default function OverviewPanel({
   previousResult,
   error,
   onOpenApiKeyModal,
-  onTabChange
+  onTabChange,
+  fixStatuses: externalFixStatuses,
+  onFixStatusChange
 }) {
   const [activeFilter, setActiveFilter] = useState('all')
   const [activeFix, setActiveFix] = useState(null)
-  const [fixStatuses, setFixStatuses] = useState({}) // issueId -> 'applied'
+  const [internalFixStatuses, setInternalFixStatuses] = useState({})
   const [copied, setCopied] = useState(false)
   const [committing, setCommitting] = useState(false)
   const [commitError, setCommitError] = useState(null)
   const [commitSuccess, setCommitSuccess] = useState(null)
+
+  const fixStatuses = externalFixStatuses || internalFixStatuses
+  const updateFixStatus = (id) => {
+    if (onFixStatusChange) {
+      onFixStatusChange(id)
+    } else {
+      setInternalFixStatuses(prev => ({ ...prev, [id]: 'applied' }))
+    }
+  }
 
   const [summaryExpanded, setSummaryExpanded] = useState(false)
   const [expandedFiles, setExpandedFiles] = useState({})
@@ -101,8 +112,11 @@ export default function OverviewPanel({
       })
       setCommitSuccess(`${res.committedFiles.length} fix(es) committed to '${res.branch}'`)
       const newStatuses = { ...fixStatuses }
-      fixableIssues.forEach(i => { newStatuses[i.id] = 'applied' })
-      setFixStatuses(newStatuses)
+      fixableIssues.forEach(i => {
+        newStatuses[i.id] = 'applied'
+        updateFixStatus(i.id)
+      })
+      setInternalFixStatuses(newStatuses)
     } catch (err) {
       if (err.message === 'GITHUB_TOKEN_MISSING') {
         setCommitError('GitHub token required. Configure in ⚙️ Settings.')
@@ -351,7 +365,7 @@ export default function OverviewPanel({
                     key={issue.id || i}
                     issue={issue}
                     fixStatus={fixStatuses[issue.id]}
-                    onFixThis={(iss) => setActiveFix(iss)}
+                    onFixThis={(iss, mode) => setActiveFix({ ...iss, initialMode: mode })}
                   />
                 ))}
             </div>
@@ -361,7 +375,7 @@ export default function OverviewPanel({
           {reviewResult.suggestedPrDescription && (
             <button
               onClick={handleCopyPrDescription}
-              className="w-full py-2 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-lg transition flex items-center justify-center gap-1.5"
+              className="w-full py-2 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer"
             >
               {copied ? '✓ Copied!' : '📋 Copy AI PR Description'}
             </button>
@@ -411,7 +425,7 @@ export default function OverviewPanel({
           prDetails={prDetails}
           onClose={() => setActiveFix(null)}
           onApplied={(id) => {
-            setFixStatuses(prev => ({ ...prev, [id]: 'applied' }))
+            updateFixStatus(id)
             setActiveFix(null)
           }}
           onOpenApiKeyModal={onOpenApiKeyModal}

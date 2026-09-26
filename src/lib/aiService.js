@@ -366,6 +366,108 @@ ${fileContent || prDetails?.rawDiff || 'No code context available'}`
 }
 
 /**
+ * Run Codebase-Aware / Cross-File Fix
+ * Analyzes repository context & dependent files to generate coordinated multi-file changes.
+ */
+export async function runCrossFileFix({ issue, prDetails }) {
+  const settings = await getAISettings()
+  const apiKey = settings.groqApiKey || settings.geminiApiKey || DEFAULT_GROQ_API_KEY
+  if (!apiKey) throw new Error('API_KEY_MISSING')
+
+  // Extract changed files list from diff or prDetails
+  const diffFiles = (prDetails?.rawDiff || '')
+    .split('\n')
+    .filter(line => line.startsWith('diff --git '))
+    .map(line => {
+      const match = line.match(/diff --git a\/(.+) b\/(.+)/)
+      return match ? match[2] : null
+    })
+    .filter(Boolean)
+
+  const systemPrompt = `You are a Principal Software Architect generating a "Codebase-Aware Cross-File Fix".
+Unlike a localized fix that focuses only on the reported line, your Codebase-Aware Fix analyzes the surrounding repository context and identifies the coordinated changes required across dependent files (e.g. caller functions, dependent services, consumers, shared interfaces, and test files).
+
+You MUST respond with ONLY valid JSON matching this exact schema:
+{
+  "title": "Short title describing the cross-file coordinated fix",
+  "explanation": "High-level architectural explanation of why changes across multiple files are needed and how they coordinate together",
+  "affectedFiles": [
+    {
+      "file": "path/to/primaryFile.js",
+      "action": "modify", // "modify" | "update_tests" | "add_handling"
+      "role": "Primary Source", // "Primary Source" | "Dependent Consumer" | "Caller Function" | "Test Suite" | "Interface Contract"
+      "reason": "Why this file is changed",
+      "originalCode": "The exact code snippet from this file to replace",
+      "fixedCode": "The updated coordinated code snippet for this file",
+      "explanation": "File-specific explanation of the change"
+    },
+    {
+      "file": "path/to/dependentFile.js",
+      "action": "modify",
+      "role": "Dependent Consumer",
+      "reason": "Update caller/consumer to match the updated contract/behavior",
+      "originalCode": "The existing caller code",
+      "fixedCode": "The synchronized caller code",
+      "explanation": "Why this dependent file requires updating"
+    }
+  ]
+}
+
+CRITICAL RULES:
+1. Always include the primary file where the issue was reported (${issue.file || 'primary'}).
+2. Identify 1 to 3 realistic dependent files (callers, dependent services, consumers, or test files) that are affected by this change.
+3. For each file, provide realistic 'originalCode' and 'fixedCode' snippets.
+4. Keep fixes surgical, minimal, and backward-compatible where possible.`
+
+  const userPrompt = `Issue Title: ${issue.title}
+Severity: ${issue.severity}
+Category: ${issue.category}
+Primary File: ${issue.file || 'Unknown'}
+Lines: ${issue.lineStart || '?'}-${issue.lineEnd || '?'}
+Issue Explanation: ${issue.explanation}
+Impact: ${issue.impact}
+
+Repository: ${prDetails?.repoIdentifier || 'unknown'}
+PR Title: ${prDetails?.title || 'unknown'}
+Files involved in PR: ${diffFiles.length > 0 ? diffFiles.join(', ') : (issue.file || 'unknown')}
+
+Relevant Code Context & PR Diff:
+${(prDetails?.rawDiff || '').slice(0, 15000)}`
+
+  const response = await fetch(GROQ_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: DEFAULT_GROQ_MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.15
+    })
+  })
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}))
+    throw new Error(errData?.error?.message || 'Cross-file AI fix generation failed.')
+  }
+
+  const data = await response.json()
+  const rawText = data?.choices?.[0]?.message?.content
+  if (!rawText) throw new Error('Empty response from AI.')
+
+  try {
+    return JSON.parse(rawText)
+  } catch (err) {
+    throw new Error('Failed to parse AI response as JSON.')
+  }
+}
+
+/**
  * Run AI test generation for a PR
  */
 export async function runAITestGeneration({ prDetails, testFramework }) {
