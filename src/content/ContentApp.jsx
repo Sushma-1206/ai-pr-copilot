@@ -44,6 +44,8 @@ export default function ContentApp() {
 
   // Modal
   const [showKeyModal, setShowKeyModal] = useState(false)
+  // Increment to signal token-dependent panels to re-check token
+  const [tokenRefreshKey, setTokenRefreshKey] = useState(0)
 
   useEffect(() => {
     async function initPRData() {
@@ -302,6 +304,7 @@ export default function ContentApp() {
                   reviewResult={revReviewResult}
                   error={revError}
                   onOpenApiKeyModal={() => setShowKeyModal(true)}
+                  tokenRefreshKey={tokenRefreshKey}
                   onReAnalyze={() => {
                     setActiveTab('overview')
                     handleRunDevCheck()
@@ -320,6 +323,7 @@ export default function ContentApp() {
         onSaveSuccess={() => {
           setError(null)
           setRevError(null)
+          setTokenRefreshKey(k => k + 1) // trigger token re-check in ReviewerPanel
         }}
       />
     </div>

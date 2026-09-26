@@ -64,7 +64,8 @@ export default function ReviewerPanel({
   reviewResult,
   error,
   onOpenApiKeyModal,
-  onReAnalyze   // called after commits to refresh readiness score
+  onReAnalyze,   // called after commits to refresh readiness score
+  tokenRefreshKey  // incremented by parent when API settings are saved
 }) {
   const [posting, setPosting] = useState(false)
   const [postSuccess, setPostSuccess] = useState(false)
@@ -83,10 +84,10 @@ export default function ReviewerPanel({
   const [fixesToCommit, setFixesToCommit] = useState([])
   const [showCommitPanel, setShowCommitPanel] = useState(false)
 
-  // Check GitHub token presence on mount
+  // Re-check GitHub token presence on mount and whenever settings are saved
   useEffect(() => {
     getGitHubToken().then(token => setHasToken(!!token))
-  }, [])
+  }, [tokenRefreshKey])
 
   const verdict = reviewResult?.verdict
   const verdictStyle =
@@ -354,7 +355,7 @@ export default function ReviewerPanel({
                 </button>
                 <button
                   onClick={handlePostReview}
-                  disabled={posting}
+                  disabled={posting || hasToken === false}
                   className={`flex-1 py-1.5 font-semibold text-[10px] rounded transition flex items-center justify-center gap-1 ${
                     hasToken === false
                       ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
