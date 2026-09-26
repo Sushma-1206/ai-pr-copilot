@@ -1,3 +1,5 @@
+import { completeGoogleSignIn } from '../lib/googleAuth'
+
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
     chrome.storage.local.set({
@@ -16,5 +18,25 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     sendResponse({ type: 'PONG', timestamp: Date.now() })
     return true
   }
+
+  if (message?.type === 'AUTH_GOOGLE') {
+    completeGoogleSignIn()
+      .then((session) => {
+        sendResponse({
+          success: true,
+          user: session?.user
+            ? { id: session.user.id, email: session.user.email }
+            : null
+        })
+      })
+      .catch((error) => {
+        sendResponse({
+          success: false,
+          error: error?.message || 'Google sign-in failed.'
+        })
+      })
+    return true
+  }
+
   return false
 })

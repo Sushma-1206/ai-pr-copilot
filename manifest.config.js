@@ -3,6 +3,9 @@ import pkg from './package.json'
 
 export default defineManifest({
   manifest_version: 3,
+  // Keep the unpacked extension ID stable so the OAuth callback URL does not
+  // change between builds or machines.
+  key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsMZ9ixQ2cHr8hi/+Q2V80AZKFsHmEXqKy3R/SiUELPma0LTb4iY8v57NRMHSPti+N8lh3RQ+OnFE+6vNhmiKBrSEminKqCbLy9x0WRtVEy5Ak8Iq9cr3m9XudRLrkTGUd9IK09kihdirLHTlaP+CSFOXHpFamGhZy+bg+KYgZb6Cnc4geFKUL8Q1bjer1iCtlMrs3+iL7wnR2XWKyadJu46rA0Ses4mXS9u0bzGjAGX1WLvBy3SL5yknISkWBbJdTKW6+/sSdfmYU17X7ljChNKeqYpdUzzxJ1+OH9587QFMbjcGXLnJUPOVh5//+wwwIDun0fI4MFEW21wfx3xPLwIDAQAB',
   name: 'AI PR Copilot',
   description:
     'AI-powered pre-flight checks for developers and final verification for reviewers on GitHub/GitLab pull requests.',
@@ -35,6 +38,6 @@ export default defineManifest({
       run_at: 'document_idle'
     }
   ],
-  permissions: ['storage', 'activeTab'],
+  permissions: ['storage', 'activeTab', 'identity'],
   host_permissions: ['https://github.com/*', 'https://gitlab.com/*', 'https://*.supabase.co/*']
 })

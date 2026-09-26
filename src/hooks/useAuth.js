@@ -53,6 +53,28 @@ export function useAuth() {
     return { success: true }
   }, [])
 
+  const signInWithGoogle = useCallback(async () => {
+    setError(null)
+
+    try {
+      const result = await chrome.runtime.sendMessage({ type: 'AUTH_GOOGLE' })
+      if (!result?.success) {
+        throw new Error(result?.error || 'Google sign-in failed.')
+      }
+
+      const { data, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+      if (!data.session) throw new Error('Google sign-in completed without a session.')
+
+      setSession(data.session)
+      return { success: true }
+    } catch (googleError) {
+      const message = googleError?.message || 'Google sign-in failed.'
+      setError(message)
+      return { success: false, error: message }
+    }
+  }, [])
+
   const signUp = useCallback(async (email, password) => {
     setError(null)
     const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
@@ -80,6 +102,7 @@ export function useAuth() {
     isAuthenticated: !!session,
     loading,
     error,
+    signInWithGoogle,
     signInWithPassword,
     signUp,
     signOut

@@ -125,7 +125,18 @@ ai-pr-copilot/
    VITE_SUPABASE_ANON_KEY=your-anon-public-key
    ```
 
-4. **Build the extension:**
+4. **Configure Google sign-in:**
+   - In Google Cloud, create a **Web application** OAuth client and add
+     `https://<your-project-ref>.supabase.co/auth/v1/callback` as an authorized redirect URI.
+   - In Supabase Dashboard → **Authentication → Sign In / Providers → Google**, enable Google and add that client ID and secret.
+   - In Supabase Dashboard → **Authentication → URL Configuration → Redirect URLs**, add:
+     `https://abbdjaagnpegifekmkelmccahjigbdnp.chromiumapp.org/supabase-auth`
+
+   The manifest contains a public extension key so this unpacked extension ID
+   and callback URL stay stable. The Google client secret belongs only in the
+   Supabase Dashboard; never put it in `.env` or extension source code.
+
+5. **Build the extension:**
    ```bash
    npm run build
    ```
