@@ -302,6 +302,10 @@ export default function ContentApp() {
                   reviewResult={revReviewResult}
                   error={revError}
                   onOpenApiKeyModal={() => setShowKeyModal(true)}
+                  onReAnalyze={() => {
+                    setActiveTab('overview')
+                    handleRunDevCheck()
+                  }}
                 />
               )}
             </div>
